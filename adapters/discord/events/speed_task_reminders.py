@@ -203,7 +203,7 @@ class SpeedTaskReminderCog(commands.Cog):
                         continue
                     ch = guild.get_channel(ann.channel_id)
                     if isinstance(ch, discord.TextChannel):
-                        await ch.send(f"There is **{human}** remaining to submit to {task.number}!")
+                        await ch.send(f"There is **{human}** remaining to submit to Task {task.number}!")
 
     @check_loop.before_loop
     async def before_check(self):

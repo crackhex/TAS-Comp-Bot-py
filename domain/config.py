@@ -114,3 +114,10 @@ class GuildConfig:
     guild_id: int
     comp: str
 
+@dataclass
+class SubmissionFileConfig:
+    comp: str
+    ext: str
+    guild_id: int
+
+

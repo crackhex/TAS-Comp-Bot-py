@@ -27,7 +27,6 @@ class TaskConfig(BaseModel):
         year (Optional[int]): the competition year; if not provided,
             automatically set to the current UTC year.
         team_size (int): maximum number of members per team.
-        multiple_tracks (bool): whether multiple tracks are enabled.
         speed_task (bool): whether this is a speed-task.
         deadline (int): UNIX epoch timestamp of the deadline.
     """
@@ -35,7 +34,6 @@ class TaskConfig(BaseModel):
     number: int
     year: Optional[int] = None
     team_size: int
-    multiple_tracks: bool
     speed_task: bool
     deadline: int
 

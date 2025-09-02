@@ -74,7 +74,7 @@ class SpeedTaskConfigCommands(commands.Cog):
         )
 
         # 3) Feedback
-        return await ctx.send(f"Succesfully set speed task text →\n> {desc}")
+        return await ctx.send(f"Succesfully set speed task text \n\n {desc}")
 
     @commands.hybrid_command(
         name="speed-task-length",

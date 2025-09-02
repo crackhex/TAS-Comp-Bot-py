@@ -59,7 +59,7 @@ class EndTaskCommand(commands.Cog):
         await self.task_manager.end_task(task.id)
 
         # 3) Confirm to the user
-        await ctx.send(f"Succesfully ended Task **{task.number}, {task.year}**")
+        return await ctx.send(f"Succesfully ended **Task {task.number}, {task.year}**")
 
 
 async def setup(bot: commands.Bot):

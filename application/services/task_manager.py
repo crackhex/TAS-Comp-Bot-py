@@ -93,7 +93,6 @@ class TaskManager:
             number=cfg.number,
             year=cfg.year,
             team_size=cfg.team_size,
-            multiple_tracks=cfg.multiple_tracks,
             speed_task=cfg.speed_task,
             deadline_epoch=cfg.deadline,
         )

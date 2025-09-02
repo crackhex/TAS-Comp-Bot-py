@@ -15,7 +15,7 @@ Summary:
 Responsibilities:
     - Enforce host-only access (via `@host_only()` check).
     - Validate that a competition is configured and currently active.
-    - Enforce allowed file extension depending on `task.multiple_tracks`.
+    - Enforce allowed file extension depending on /set-file config.
     - Call `SubmissionService.submit(...)` to parse & store the submission.
     - Refresh the public "Current Submissions" message.
     - Assign the submitter role to the solo user or to all team members.
@@ -27,32 +27,28 @@ from discord.ext import commands
 from adapters.discord.checks import host_only
 from adapters.discord.utils.submission_utils import refresh_submission_list
 from adapters.discord.utils.role_utils import add_role_to_member
-from application.services.submission_service import SubmissionService
 from application.services.config_service     import ConfigService
 from application.services.task_manager       import TaskManager
 
 
 class SubmitCommand(commands.Cog):
     """
-    `/submit @user <file>` — Host-only.
+    /submit @user <file> — Host-only.
 
     Allows a Host to submit a file for a given user.
-    After a successful submission, the submissionlist is
+    After a successful submission, the submission list is
     refreshed and the submitter role is granted.
 
     Attributes:
-        sub_svc (SubmissionService): Application service handling submissions.
         cfg_svc (ConfigService): Service to access competition/guild config.
         task_mgr (TaskManager): Service to query the active task.
     """
 
     def __init__(
         self,
-        submission_svc: SubmissionService,
         config_svc:     ConfigService,
         task_mgr:       TaskManager,
     ):
-        self.sub_svc  = submission_svc
         self.cfg_svc  = config_svc
         self.task_mgr = task_mgr
 
@@ -74,7 +70,7 @@ class SubmitCommand(commands.Cog):
         Flow:
             1) Ensure the server is configured for a competition.
             2) Ensure an active competition exists.
-            3) Enforce the allowed extension based on `multiple_tracks`.
+            3) Enforce the allowed extension based on the allowed file.
             4) Read file bytes and call `SubmissionService.submit(...)`.
             5) Refresh the public submissions list message.
             6) Assign the submitter role (solo or team) if configured.
@@ -92,38 +88,39 @@ class SubmitCommand(commands.Cog):
         gc = await self.cfg_svc.get_guild_config(ctx.guild.id)
         if not gc:
             return await ctx.send("There is no competition configured for this server. Use `/set-comp`.")
+        comp_key = gc.comp
 
         # 2) Active competition?
         task = await self.task_mgr.get_active_task()
         if not task:
             return await ctx.send("There is no active task!")
 
-        # 3) Extension check based on single-track / multi-track rules
-        fname = file.filename.lower()
-        if task.multiple_tracks:
-            if not fname.endswith(".rksys"):
-                return await ctx.send("This task is for multiple tracks; please submit an `.rksys` file.")
-        else:
-            if not fname.endswith(".rkg"):
-                return await ctx.send("This task is for a single track; please submit an `.rkg` file.")
+        # 3) — enforce allowed extension ---------------------------------
+        ext_cfg = await self.cfg_svc.get_submission_file_extension(comp_key)
+        if not ext_cfg:
+            return await ctx.send("No submission file type configured. Ask an admin to run `/set-file`.")
 
-        # 4) Read file bytes & delegate to the submission service
+
+        filename = file.filename.lower()
+        if not filename.endswith(f".{ext_cfg.ext}"):
+            return await ctx.send(f"This competition only accepts `.{ext_cfg.ext}` files.")
+
+        # 4) — read bytes & delegate to the submission-service -----------
         data = await file.read()
         try:
-            submission = await self.sub_svc.submit(
+            submission = await ctx.bot.submission_service.submit(
                 user_id=member.id,
                 file_bytes=data,
                 file_url=file.url,
             )
         except Exception as exc:
-            # Print out the exception for debugging
-            return await ctx.send(f"Couldn't submit : {exc}")
+            return await ctx.send(f"❌ Submission failed: {exc}")
+
 
         # 5) Refresh the public submission list
         await refresh_submission_list(
             bot=    ctx.bot,
             cfg_svc=self.cfg_svc,
-            sub_svc=self.sub_svc,
             guild=  ctx.guild,
         )
 
@@ -159,7 +156,6 @@ async def setup(bot: commands.Bot):
     """
     await bot.add_cog(
         SubmitCommand(
-            submission_svc=bot.submission_service,
             config_svc=bot.config_service,
             task_mgr=bot.task_manager,
         )

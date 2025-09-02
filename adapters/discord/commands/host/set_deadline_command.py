@@ -77,7 +77,7 @@ class SetDeadlineCommand(commands.Cog):
             return await ctx.send(f"Couldn't update deadline due to error: {exc}")
 
         # 4) User-friendly confirmation (Discord renders <t:...:F>)
-        await ctx.send(f"The deadline has been updated! → <t:{new_deadline}:F>.")
+        return await ctx.send(f"The deadline has been updated! → <t:{new_deadline}:F>.")
 
 
 async def setup(bot: commands.Bot):

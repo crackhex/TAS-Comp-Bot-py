@@ -22,7 +22,6 @@ from discord.ext import commands
 
 from adapters.discord.utils.submission_utils import refresh_submission_list
 from application.services.team_service       import TeamService
-from application.services.submission_service import SubmissionService
 from application.services.task_manager       import TaskManager
 from application.services.config_service     import ConfigService
 
@@ -33,7 +32,6 @@ class LeaveTeamCommand(commands.Cog):
 
     Attributes:
         team_svc (TeamService): Team domain/application operations.
-        submission_svc (SubmissionService): Used to refresh the public list.
         task_mgr (TaskManager): Provides active/last task lookup.
         cfg_svc (ConfigService): Reads guild/competition configuration.
     """
@@ -41,12 +39,10 @@ class LeaveTeamCommand(commands.Cog):
     def __init__(
         self,
         team_svc:       TeamService,
-        submission_svc: SubmissionService,
         task_mgr:       TaskManager,
         config_svc:     ConfigService,
     ):
         self.team_svc       = team_svc
-        self.submission_svc = submission_svc
         self.task_mgr       = task_mgr
         self.cfg_svc        = config_svc
 
@@ -102,7 +98,6 @@ class LeaveTeamCommand(commands.Cog):
         return await refresh_submission_list(
             bot=    ctx.bot,
             cfg_svc=self.cfg_svc,
-            sub_svc=self.submission_svc,
             guild=  ctx.guild,
         )
 
@@ -111,7 +106,6 @@ async def setup(bot: commands.Bot):
     await bot.add_cog(
         LeaveTeamCommand(
             team_svc=       bot.team_service,
-            submission_svc= bot.submission_service,
             task_mgr=       bot.task_manager,
             config_svc=     bot.config_service,
         )

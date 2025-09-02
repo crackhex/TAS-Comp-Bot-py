@@ -33,7 +33,6 @@ class Task:
         number: int,
         year: int,
         team_size: int,
-        multiple_tracks: bool,
         speed_task: bool,
         deadline_epoch: int,
         is_active: bool = False,
@@ -44,7 +43,6 @@ class Task:
             number (int): competition number.
             year (int): competition year.
             team_size (int): maximum members per team.
-            multiple_tracks (bool): allow multiple tracks?
             speed_task (bool): is this a speed‑task?
             deadline_epoch (int): UNIX timestamp for deadline.
             is_active (bool): State of the task: running, or closed.
@@ -54,7 +52,6 @@ class Task:
         self.number = number
         self.year = year
         self.team_size = team_size
-        self.multiple_tracks = multiple_tracks
         self.speed_task = speed_task
         self.deadline = deadline_epoch
         self._is_active = is_active

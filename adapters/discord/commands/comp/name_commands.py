@@ -25,7 +25,6 @@ from adapters.discord.utils.submission_utils import refresh_submission_list
 from application.services.user_service       import UserService
 from application.services.team_service       import TeamService
 from application.services.task_manager       import TaskManager
-from application.services.submission_service import SubmissionService
 from application.services.config_service     import ConfigService
 
 MAX_LEN     = 120
@@ -40,13 +39,11 @@ class NameCommands(commands.Cog):
         user_service: UserService,
         team_service: TeamService,
         task_manager: TaskManager,
-        submission_service: SubmissionService,
         config_service: ConfigService,
     ):
         self.user_svc  = user_service
         self.team_svc  = team_service
         self.task_mgr  = task_manager
-        self.sub_svc   = submission_service
         self.cfg_svc   = config_service
 
     # ──────────── ADMIN : /setname ────────────
@@ -83,11 +80,10 @@ class NameCommands(commands.Cog):
         await refresh_submission_list(
             bot=ctx.bot,
             cfg_svc=self.cfg_svc,
-            sub_svc=self.sub_svc,
             guild=ctx.guild,
         )
 
-        await ctx.send(f"✅ {member.mention}'s name updated → **{user.display_name}**")
+        return await ctx.send(f"✅ {member.mention}'s name updated → **{user.display_name}**")
 
     # ────────── Player : /setteamname ──────────
     @commands.hybrid_command(
@@ -138,7 +134,6 @@ class NameCommands(commands.Cog):
         await refresh_submission_list(
             bot=ctx.bot,
             cfg_svc=self.cfg_svc,
-            sub_svc=self.sub_svc,
             guild=guild,
         )
 
@@ -155,7 +150,6 @@ async def setup(bot: commands.Bot):
             user_service=bot.user_service,
             team_service=bot.team_service,
             task_manager=bot.task_manager,
-            submission_service=bot.submission_service,
             config_service=bot.config_service,
         )
     )

@@ -19,8 +19,10 @@ Responsibilities:
 from typing import Optional
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from application.services.config_service import ConfigService
+from application.services.submission_services.service_factory import build_submission_service
 
 
 class ConfigCommands(commands.Cog):
@@ -39,12 +41,22 @@ class ConfigCommands(commands.Cog):
         """
         self.cfg = config_service
 
-    # 1️⃣  Guild → comp ----------------------------------------------------- #
     @commands.hybrid_command(
         name="set-comp",
-        description="Associate this Discord server with a competition (mkw, nsmbw, sm64, etc).",
+        description="Associate this Discord server with a competition (e.g. MKWii).",
+        with_app_command=True,
     )
     @commands.has_permissions(administrator=True)
+    @app_commands.describe(
+        comp="Select the competition this guild will run",
+    )
+    @app_commands.choices(
+        comp=[
+            app_commands.Choice(name="Mario Kart Wii", value="mkw"),
+            # app_commands.Choice(name="New Super Mario Bros. Wii", value="nsmbw"),
+            # app_commands.Choice(name="Super Mario 64", value="sm64"),
+        ]
+    )
     async def set_comp(
         self,
         ctx: commands.Context,
@@ -64,6 +76,20 @@ class ConfigCommands(commands.Cog):
             None. Sends a confirmation message on success.
         """
         await self.cfg.set_guild_config(ctx.guild.id, comp)
+
+        bot: commands.Bot = ctx.bot
+
+        bot.submission_service = build_submission_service(
+            comp=comp.lower(),
+            user_svc=bot.user_service,
+            submission_repo=bot.submission_service._sub_repo,
+            task_repo=bot.task_manager._task_repo,
+            user_repo=bot.user_service._user_repo,
+            team_repo=bot.team_service._team_repo,
+            speed_repo=bot.speed_task_service._speed_repo,
+            file_parser=bot.file_parser,
+        )
+
         await ctx.send(
             f"Mapping guild → comp saved: **{comp}** for this server."
         )
@@ -87,9 +113,9 @@ class ConfigCommands(commands.Cog):
             return await ctx.send(
                 "No competition configured. Use `/set-comp` first."
             )
-        await ctx.send(f"Current comp: **{gc.comp}**")
+        return await ctx.send(f"Current comp: **{gc.comp}**")
 
-    # 2️⃣  Global configuration -------------------------------------------- #
+    # Global configuration -------------------------------------------- #
     @commands.hybrid_command(
         name="config",
         description="Configure core roles & channels",

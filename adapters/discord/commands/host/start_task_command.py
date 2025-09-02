@@ -14,6 +14,7 @@ Summary:
 
 Responsibilities:
     - Enforce host-only access (via `@host_only()` check).
+    - Ensures an allowed file-type is set
     - Validate task parameters (`TaskConfig`).
     - For speed-tasks, ensure required config entries exist (desc/length/reminders).
     - Start the task via `TaskManager.start_task(...)` (which resets related tables).
@@ -32,6 +33,7 @@ from pydantic import ValidationError
 from adapters.discord.checks import host_only
 from adapters.discord.utils.role_utils import clear_role_for_guild
 from application.models import TaskConfig
+from application.parsers.null_parser import NullParser
 from application.services.task_manager import TaskManager
 from application.services.config_service import ConfigService
 
@@ -41,7 +43,7 @@ class StartTaskCommand(commands.Cog):
     Start a competition (and setting `is_active=True`). Host-only.
 
     Hybrid usage:
-        $start-task <number> <year?> <team_size?> <multiple_tracks?> <speed_task?> <deadline>
+        $start-task <number> <year?> <team_size?> <speed_task?> <deadline>
         /start-task   (same arguments via slash)
 
     Attributes:
@@ -70,7 +72,6 @@ class StartTaskCommand(commands.Cog):
         *,
         year: Optional[int] = None,
         team_size: int = 1,
-        multiple_tracks: bool = False,
         speed_task: bool = False,
         deadline: int,
     ):
@@ -92,21 +93,30 @@ class StartTaskCommand(commands.Cog):
             number (int): Task number (competition identifier).
             year (Optional[int]): Year (defaults via Pydantic validator if omitted).
             team_size (int): Maximum players per team (1 for solo).
-            multiple_tracks (bool): If True, `.rksys` files are enforced; else `.rkg`.
             speed_task (bool): If True, task starts hidden and will be released later.
             deadline (int): Absolute deadline (UNIX epoch seconds).
 
         Returns:
             None
         """
-        # 1) For speed-tasks, ensure necessary configuration is present
-        if speed_task:
-            gc = await self.cfg_svc.get_guild_config(ctx.guild.id)
-            if not gc:
-                return await ctx.send("There is no competition configured for this server. Use `/set-comp`.")
-            comp = gc.comp
 
-            desc_cfg   = await self.cfg_svc.get_speed_task_desc(comp)
+        # 1) Ensure this guild is mapped to a competition
+        gc = await self.cfg_svc.get_guild_config(ctx.guild.id)
+        if not gc:
+            return await ctx.send("Use `/set-comp` first to map this server to a competition.")
+        comp = gc.comp
+
+        # 2) Ensure a submission-file extension has been configured
+        file_ext_cfg = await self.cfg_svc.get_submission_file_extension(comp)
+        if not file_ext_cfg or not file_ext_cfg.ext:
+            return await ctx.send(
+                "No submission file type configured yet. "
+                "Please run `/set-file` before starting a competition."
+            )
+
+        # 3) Additional checks when launching a speed-task
+        if speed_task:
+            desc_cfg = await self.cfg_svc.get_speed_task_desc(comp)
             length_cfg = await self.cfg_svc.get_speed_task_length(comp)
             remind_cfg = await self.cfg_svc.get_speed_task_reminders(comp)
 
@@ -115,35 +125,32 @@ class StartTaskCommand(commands.Cog):
                 missing.append("description")
             if not length_cfg or length_cfg.time <= 0:
                 missing.append("length")
-            # require at least the first reminder
             if not remind_cfg or remind_cfg.reminder1 is None:
                 missing.append("reminders")
-
             if missing:
                 return await ctx.send(
-                    "Couldn't start the speed task; "
-                    f"missing or invalid configuration for: {', '.join(missing)}."
+                    "Cannot start a speed-task; missing or invalid config for "
+                    + ", ".join(missing) + "."
                 )
 
-        # 2) Validate parameters using Pydantic DTO
+        # 4) Validate parameters using Pydantic DTO
         try:
             cfg = TaskConfig(
                 number=number,
                 year=year,
                 team_size=team_size,
-                multiple_tracks=multiple_tracks,
                 speed_task=speed_task,
                 deadline=deadline,
             )
         except ValidationError as e:
             return await ctx.send(f"Invalid task parameters {e}")
 
-        # 3) Deadline must be in the future
+        # 5) Deadline must be in the future
         now = int(time.time())
         if cfg.deadline <= now:
             return await ctx.send("This deadline is in the past! Please use a deadline in the future :P")
 
-        # 4) Start the competition (resets related tables inside TaskManager)
+        # 6) Start the competition (resets related tables inside TaskManager)
         try:
             task = await self.task_manager.start_task(cfg)
         except Exception as exc:
@@ -151,20 +158,20 @@ class StartTaskCommand(commands.Cog):
             traceback.print_exc()
             return await ctx.send(f"Ran into a problem that prevent task from being started: {exc}")
 
-        # 5) Clear the submitted role from all members
+        # 7) Clear the submitted role from all members
         guild_cfg = await self.cfg_svc.get_guild_config(ctx.guild.id)
         if guild_cfg:
             submit_cfg = await self.cfg_svc.get_submitter_role(guild_cfg.comp)
             if submit_cfg and submit_cfg.role_id:
                 await clear_role_for_guild(ctx.guild, submit_cfg.role_id)
 
-        # 6) Confirmation message with formatted deadline
+        # 8) Confirmation message with formatted deadline
         await ctx.send(
             f"Successfully started **Task {task.number}, {task.year}**! "
             f"Deadline: <t:{task.deadline}:F>."
         )
 
-        # 7) Clean up the previous “Current Submissions” message (if any)
+        # 9) Clean up the previous “Current Submissions” message (if any)
         return await self._delete_previous_submission_msg(ctx)
 
     async def _delete_previous_submission_msg(self, ctx: commands.Context) -> None:

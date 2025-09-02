@@ -29,7 +29,7 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
 )
 from domain.repositories import ConfigRepository
 
@@ -147,6 +147,17 @@ class ConfigService:
     async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]:
         return await self._repo.get_guild_config(guild_id)
 
+    async def list_guild_configs(self) -> list[GuildConfig]:
+        return await self._repo.list_guild_configs()
+
     async def set_guild_config(self, guild_id: int, comp: str) -> None:
         gc = GuildConfig(guild_id=guild_id, comp=comp)
         await self._repo.save_guild_config(gc)
+
+    # ── FileExtension ──
+    async def get_submission_file_extension(self, comp: str) -> Optional[SubmissionFileConfig]:
+        return await self._repo.get_submission_file_extension(comp)
+
+    async def set_submission_file_extension(self, comp: str, ext: str, guild_id: int) -> None:
+        cfg = SubmissionFileConfig(comp=comp, ext=ext.lower(), guild_id=guild_id)
+        await self._repo.save_submission_file_extension(cfg)

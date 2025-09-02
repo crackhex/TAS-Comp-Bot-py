@@ -22,14 +22,13 @@ Responsibilities:
 from typing import List, Optional
 
 import discord
-from application.services.submission_service import SubmissionService
 from application.services.config_service     import ConfigService
+from application.services.submission_services.base_submission_service import BaseSubmissionService
 
 
 async def refresh_submission_list(
     bot:        discord.Client,
     cfg_svc:    ConfigService,
-    sub_svc:    SubmissionService,
     guild:      Optional[discord.Guild],
 ) -> None:
     """
@@ -38,7 +37,6 @@ async def refresh_submission_list(
     Args:
         bot (discord.Client): the bot instance (to identify its user and guilds).
         cfg_svc (ConfigService): service for reading guild-specific configuration.
-        sub_svc (SubmissionService): service for retrieving current submissions.
         guild (discord.Guild | None): the target guild to update; if None, no action.
 
     Returns:
@@ -46,6 +44,9 @@ async def refresh_submission_list(
     """
     if guild is None:
         return
+
+
+    sub_svc: BaseSubmissionService = bot.submission_service
 
     # 1) Retrieve guild configuration and the submissions channel setting
     gc = await cfg_svc.get_guild_config(guild.id)

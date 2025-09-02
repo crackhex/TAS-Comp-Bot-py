@@ -26,7 +26,6 @@ from adapters.discord.utils.submission_utils import refresh_submission_list
 from adapters.discord.utils.role_utils       import remove_role_from_member
 from application.services.team_service       import TeamService
 from application.services.config_service     import ConfigService
-from application.services.submission_service import SubmissionService
 
 
 class HostDissolveCommand(commands.Cog):
@@ -41,18 +40,15 @@ class HostDissolveCommand(commands.Cog):
 
     Attributes:
         team_svc (TeamService): Team management application service.
-        sub_svc  (SubmissionService): Submission management application service.
         cfg_svc  (ConfigService): Configuration service (channels, roles, etc.).
     """
 
     def __init__(
         self,
         team_svc:       TeamService,
-        submission_svc: SubmissionService,
         config_svc:     ConfigService,
     ):
         self.team_svc = team_svc
-        self.sub_svc  = submission_svc
         self.cfg_svc  = config_svc
 
     @commands.hybrid_command(
@@ -98,7 +94,7 @@ class HostDissolveCommand(commands.Cog):
 
         # 3) Remove submission (team or solo). If none exists, continue gracefully.
         try:
-            await self.sub_svc.remove_submission(member.id)
+            await ctx.bot.submission_service.remove_submission(member.id)
         except Exception:
             # No submission (solo/team) to remove
             pass
@@ -119,12 +115,11 @@ class HostDissolveCommand(commands.Cog):
         await refresh_submission_list(
             bot=    ctx.bot,
             cfg_svc=self.cfg_svc,
-            sub_svc=self.sub_svc,
             guild=  ctx.guild,
         )
 
         # 7) Confirmation
-        await ctx.send(f"{member.mention}'s team has been dissolved.")
+        return await ctx.send(f"{member.mention}'s team has been dissolved.")
 
 
 async def setup(bot: commands.Bot):
@@ -137,7 +132,6 @@ async def setup(bot: commands.Bot):
     await bot.add_cog(
         HostDissolveCommand(
             team_svc=       bot.team_service,
-            submission_svc= bot.submission_service,
             config_svc=     bot.config_service,
         )
     )

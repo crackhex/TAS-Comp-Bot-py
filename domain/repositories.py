@@ -17,7 +17,7 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
 )
 
 class TaskRepository(Protocol):
@@ -115,6 +115,11 @@ class ConfigRepository(Protocol):
 
     # Map guild to comp
     async def get_guild_config(self, guild_id: int) -> Optional[GuildConfig]: ...
-
+    async def list_guild_configs(self) -> List[GuildConfig]: ...
     async def save_guild_config(self, cfg: GuildConfig) -> None: ...
+
+    # FileExtension
+    async def get_submission_file_extension(self, comp: str) -> Optional[SubmissionFileConfig]: ...
+    async def save_submission_file_extension(self, cfg: SubmissionFileConfig) -> None: ...
+
 

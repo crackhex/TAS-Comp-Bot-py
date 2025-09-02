@@ -23,7 +23,6 @@ from discord.ext import commands
 from adapters.discord.checks                       import host_only
 from adapters.discord.utils.submission_utils       import refresh_submission_list
 from adapters.discord.utils.role_utils             import remove_role_from_member
-from application.services.submission_service       import SubmissionService
 from application.services.config_service           import ConfigService
 from application.services.task_manager             import TaskManager
 
@@ -36,18 +35,15 @@ class DeleteSubmissionCommand(commands.Cog):
         /delete-submission @user
 
     Attributes:
-        sub_svc  (SubmissionService): Application service for submission CRUD.
         cfg_svc  (ConfigService): Service to access guild-level configuration.
         task_mgr (TaskManager): Service to resolve active/last tasks.
     """
 
     def __init__(
         self,
-        submission_svc: SubmissionService,
         config_svc:     ConfigService,
         task_mgr:       TaskManager,
     ):
-        self.sub_svc  = submission_svc
         self.cfg_svc  = config_svc
         self.task_mgr = task_mgr
 
@@ -98,7 +94,7 @@ class DeleteSubmissionCommand(commands.Cog):
         # 3) Delete the submission via the service
         try:
             # remove_submission returns the deleted Submission entity
-            submission = await self.sub_svc.remove_submission(user_id=member.id)
+            submission = await ctx.bot.submission_service.remove_submission(user_id=member.id)
         except Exception as exc:
             return await ctx.send(f"Unable to delete submission: {exc}")
 
@@ -106,7 +102,6 @@ class DeleteSubmissionCommand(commands.Cog):
         await refresh_submission_list(
             bot=    ctx.bot,
             cfg_svc=self.cfg_svc,
-            sub_svc=self.sub_svc,
             guild=  ctx.guild,
         )
 
@@ -134,7 +129,6 @@ async def setup(bot: commands.Bot):
     """
     await bot.add_cog(
         DeleteSubmissionCommand(
-            submission_svc=bot.submission_service,
             config_svc=    bot.config_service,
             task_mgr=      bot.task_manager,
         )

@@ -28,7 +28,7 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
 )
 
 # ────────────────────────────────────────────────────────────
@@ -44,7 +44,6 @@ class TaskORM(Base):
     year            = Column("year",           Integer, nullable=False)
     is_active       = Column("is_active",      Boolean, default=False)
     team_size       = Column("team_size",      Integer, nullable=False)
-    multiple_tracks = Column("multiple_tracks",Boolean, default=False)
     speed_task      = Column("speed_task",     Boolean, default=False)
     deadline        = Column("deadline",       Integer, nullable=False)  # UNIX
     is_released     = Column("is_released",    Boolean, default=False)
@@ -59,7 +58,6 @@ class TaskORM(Base):
             year=task.year,
             is_active=task.is_active,
             team_size=task.team_size,
-            multiple_tracks=task.multiple_tracks,
             speed_task=task.speed_task,
             deadline=task.deadline,
             is_released=task.is_released,
@@ -71,7 +69,6 @@ class TaskORM(Base):
             number=self.number,
             year=self.year,
             team_size=self.team_size,
-            multiple_tracks=self.multiple_tracks,
             speed_task=self.speed_task,
             deadline_epoch=self.deadline,
             is_active=self.is_active,
@@ -499,3 +496,20 @@ class GuildConfigORM(Base):
 
     def to_domain(self) -> GuildConfig:
         return GuildConfig(guild_id=self.guild_id, comp=self.comp)
+
+
+class SubmissionFileConfigORM(Base):
+    __tablename__ = "submission_file_config"
+
+    id       = Column(Integer, primary_key=True, autoincrement=True)
+    comp     = Column("comp",     String,  nullable=False, unique=True)
+    ext      = Column("ext",      String,  nullable=False)
+    guild_id = Column("guild_id", Integer, nullable=False)
+
+    @classmethod
+    def from_domain(cls, cfg: SubmissionFileConfig) -> "SubmissionFileConfigORM":
+        return cls(comp=cfg.comp, ext=cfg.ext.lower(), guild_id=cfg.guild_id)
+
+    def to_domain(self) -> SubmissionFileConfig:
+        return SubmissionFileConfig(comp=self.comp, ext=self.ext, guild_id=self.guild_id)
+

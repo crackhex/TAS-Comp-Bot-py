@@ -22,7 +22,6 @@ from typing import List
 import discord
 from discord.ext import commands
 
-from application.services.submission_service import SubmissionService
 from application.services.task_manager       import TaskManager
 from adapters.discord.checks                 import host_only
 
@@ -52,16 +51,13 @@ class GetSubmissionsCommand(commands.Cog):
     Cog providing the `/get-submissions` host command.
 
     Attributes:
-        sub_svc (SubmissionService): Application service for submissions.
         task_mgr (TaskManager): Application service for task lifecycle and lookup.
     """
 
     def __init__(
         self,
-        submission_service: SubmissionService,
         task_manager:       TaskManager,
     ):
-        self.sub_svc  = submission_service
         self.task_mgr = task_manager
 
     @commands.hybrid_command(
@@ -95,18 +91,16 @@ class GetSubmissionsCommand(commands.Cog):
         if not task:
             return await ctx.send("There is no competition to retrieve submissions from.")
 
-        # 2) Retrieve submissions for this task
+        # 2) Retrieve submissions for this task via submission service
         try:
-            subs = await self.sub_svc.get_submissions()
+            subs = await ctx.bot.submission_service.get_submissions()
         except Exception as exc:
             return await ctx.send(f"Internal error: {exc}")
 
         # 3) If there are no submissions
         if not subs:
             return await ctx.send(
-                f"No one submitted to  "
-                f"**#{task.number} ({task.year})** :("
-            )
+                f"No one submitted to **Task {task.number}, {task.year}** :(")
 
         # 4) Sort by first submission ID
         subs.sort(key=lambda s: s.id)
@@ -156,6 +150,8 @@ class GetSubmissionsCommand(commands.Cog):
             # Small delay to avoid rate limits
             await asyncio.sleep(1)
 
+        return None
+
 
 async def setup(bot: commands.Bot) -> None:
     """
@@ -166,7 +162,6 @@ async def setup(bot: commands.Bot) -> None:
     """
     await bot.add_cog(
         GetSubmissionsCommand(
-            submission_service=bot.submission_service,
             task_manager=     bot.task_manager,
         )
     )

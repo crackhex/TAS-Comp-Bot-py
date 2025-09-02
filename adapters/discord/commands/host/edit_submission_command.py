@@ -21,7 +21,6 @@ from typing import Optional
 from discord.ext import commands
 
 from adapters.discord.checks import host_only
-from application.services.submission_service import SubmissionService
 from application.services.task_manager       import TaskManager
 from application.services.config_service     import ConfigService
 
@@ -43,18 +42,15 @@ class EditSubmissionCommand(commands.Cog):
         /edit-submission @user <new_time: float> <dq: bool> [dq_reason]
 
     Attributes:
-        sub_svc  (SubmissionService): Application service used to edit submissions.
         task_mgr (TaskManager): Service to resolve the active or last competition.
         cfg_svc  (ConfigService): Service to query guild-level configuration.
     """
 
     def __init__(
         self,
-        submission_svc: SubmissionService,
         task_mgr:       TaskManager,
         config_svc:     ConfigService,
     ):
-        self.sub_svc  = submission_svc
         self.task_mgr = task_mgr
         self.cfg_svc  = config_svc
 
@@ -114,7 +110,7 @@ class EditSubmissionCommand(commands.Cog):
         # 4) Capture the current submission (for summary) by scanning known subs
         old_sub = None
         try:
-            all_subs = await self.sub_svc.get_submissions()
+            all_subs = await ctx.bot.submission_service.get_submissions()
             for s in all_subs:
                 if s.team:
                     if any(m.discord_id == member.id for m in s.team.members):
@@ -131,9 +127,9 @@ class EditSubmissionCommand(commands.Cog):
         old_time = old_sub.time if old_sub else None
         old_dq   = bool(old_sub.dq) if old_sub else None
 
-        # 5) Apply the edit via the service layer
+        # 5) Apply the edit via the submission service
         try:
-            submission = await self.sub_svc.edit_submission(
+            submission = await ctx.bot.submission_service.edit_submission(
                 user_id=member.id,
                 new_time=new_time,
                 dq=dq,
@@ -146,7 +142,7 @@ class EditSubmissionCommand(commands.Cog):
 
         # 6) Notify the competitor(s) via DM (team or solo)
         dm_message = (
-            f"🏁 Your submission for task **{submission.task.number}, {submission.task.year}** has been updated by a host:\n"
+            f"🏁 Your submission for Task **{submission.task.number}, {submission.task.year}** has been updated by a host:\n"
             f"• Time: **{_format_time(new_time)}**\n"
             f"• DQ: {'Yes' if dq else 'No'}"
         )
@@ -202,7 +198,6 @@ async def setup(bot: commands.Bot):
     """
     await bot.add_cog(
         EditSubmissionCommand(
-            submission_svc=bot.submission_service,
             task_mgr=      bot.task_manager,
             config_svc=    bot.config_service,
         )

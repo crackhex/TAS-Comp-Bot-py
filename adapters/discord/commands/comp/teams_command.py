@@ -17,7 +17,6 @@ Responsibilities:
 """
 from typing import List
 
-import discord
 from discord.ext import commands
 
 from application.services.team_service import TeamService

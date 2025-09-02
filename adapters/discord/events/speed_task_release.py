@@ -130,7 +130,7 @@ class SpeedTaskReleaseCog(commands.Cog):
                 desc     = desc_cfg.desc if desc_cfg else "No description provided."
                 await ch_tasks.send(
                     f"{desc}\n\n"
-                    f"You have until <t:{task.deadline}:f> (<t:{task.deadline}:R<) to submit!"
+                    f"You have until <t:{task.deadline}:f> (<t:{task.deadline}:R>) to submit!"
                 )
 
         # – announcements channel: ping and link to #tasks
@@ -144,7 +144,7 @@ class SpeedTaskReleaseCog(commands.Cog):
                     else f"<#{tasks_cfg.channel_id if tasks_cfg else ''}>"
                 )
                 await ch_ann.send(
-                    "@everyone The speed task is now public!"
+                    "@everyone The speed task is now public! "
                     f"Head over to {mention} for details."
                 )
 

@@ -25,13 +25,9 @@ from discord.ext import commands
 
 from adapters.discord.utils.role_utils import add_role_to_member
 from adapters.discord.utils.submission_utils import refresh_submission_list
-from application.services.submission_service import SubmissionService
 from application.services.speed_task_service    import SpeedTaskService
 from application.services.task_manager          import TaskManager
 from application.services.config_service        import ConfigService
-
-# Accepted extensions in general
-VALID_EXT = (".rkg", ".rksys")
 
 
 class DMSubmissionListener(commands.Cog):
@@ -50,7 +46,6 @@ class DMSubmissionListener(commands.Cog):
 
     def __init__(
         self,
-        submission_service: SubmissionService,
         speed_svc:          SpeedTaskService,
         task_mgr:           TaskManager,
         config_service:     ConfigService,
@@ -59,12 +54,10 @@ class DMSubmissionListener(commands.Cog):
         Initialize the listener.
 
         Args:
-            submission_service (SubmissionService): Service handling submissions.
             speed_svc (SpeedTaskService): Service managing speed-task sessions.
             task_mgr (TaskManager): Service managing competitions/tasks.
             config_service (ConfigService): Service for retrieving configuration.
         """
-        self.sub_svc   = submission_service
         self.speed_svc = speed_svc
         self.task_mgr  = task_mgr
         self.cfg_svc   = config_service
@@ -77,87 +70,97 @@ class DMSubmissionListener(commands.Cog):
         Args:
             msg (discord.Message): Incoming message object.
         """
-        # 0) Ignore bots, guild messages, or messages without attachments
+
+        # Ignore bots, guild messages, or messages without attachments
         if msg.author.bot or msg.guild is not None or not msg.attachments:
             return
 
-        fn = msg.attachments[0].filename.lower()
+        filename = msg.attachments[0].filename.lower()
 
-        # 1) Check general file extension validity
-        if not fn.endswith(VALID_EXT):
-            return await msg.channel.send("Unrecognized file type (must be .rkg or .rksys to submit).")
-
-        # 2) Check active competition
+        # 1) ––––– Ensure there is an active task
         task = await self.task_mgr.get_active_task()
         if not task:
-            return await msg.channel.send("There is no ongoing task!")
+            await msg.channel.send("There is no ongoing task!")
+            return
 
-        # 3) Enforce competition-specific file type
-        #    multiple_tracks=False → only .rkg allowed
-        #    multiple_tracks=True  → only .rksys allowed
-        if not task.multiple_tracks and not fn.endswith(".rkg"):
-            return await msg.channel.send("This task only accepts .rkg files.")
-        if task.multiple_tracks and not fn.endswith(".rksys"):
-            return await msg.channel.send("This task only accepts .rksys files.")
+        # 2) Retrieve the **accepted extension for this competition
+        #       (set by /set-file). If nothing is configured, submissions are
+        #       disabled until an admin sets one.
+        gc = await self.cfg_svc.get_guild_config(self.bot.guilds[0].id)
+        if not gc:
+            await msg.channel.send("This server is not bound to any competition. Ask an admin to use `/set-comp`")
+            return
 
-        # 4) If speed-task, verify user's session
+        ext_cfg = await self.cfg_svc.get_submission_file_extension(gc.comp)
+        if not ext_cfg:
+            await msg.channel.send(
+                "No submission file type configured. "
+                "Ask an admin to use `/set-file` first."
+            )
+            return
+
+        accepted_ext = ext_cfg.ext.lower()
+
+        if not filename.endswith(f".{accepted_ext}"):
+            await msg.channel.send(
+                f"This competition only accepts **.{accepted_ext}** files."
+            )
+            return
+
+        # 3) Speed-task session verifications
         if task.speed_task:
             session = await self.speed_svc.get_session_for_user(msg.author.id)
             if not session:
-                return await msg.channel.send(
-                    "You may not submit to this speed task as of now! Use `$requesttask` first."
-                )
+                await msg.channel.send("You may not submit to this speed task as of now! Use `$requesttask` first.")
+                return
             if not session.is_active():
-                return await msg.channel.send("Your speed task is already over! You cannot submit.")
+                await msg.channel.send("Your speed task is already over! You cannot submit.")
+                return
 
-        # 5) Read file bytes and URL
+        # 4) Fetch file bytes & hand over to SubmissionService
         file_bytes = await msg.attachments[0].read()
-        file_url   = msg.attachments[0].url
+        file_url = msg.attachments[0].url
 
-        # 6) Submit via SubmissionService
         try:
-            submission = await self.sub_svc.submit(
-                user_id    = msg.author.id,
-                file_bytes = file_bytes,
-                file_url   = file_url,
+            submission = await self.bot.submission_service.submit(
+                user_id=msg.author.id,
+                file_bytes=file_bytes,
+                file_url=file_url,
             )
         except Exception as exc:
-            return await msg.channel.send(f"Submission failed: {exc}")
+            await msg.channel.send(f"❌ Submission failed: {exc}")
+            return
 
-        # 7) Resolve the server/guild configured for this bot
+        # 5) Refresh the public “Current Submissions” list
         target_guild: Optional[discord.Guild] = self.bot.guilds[0] if self.bot.guilds else None
         if target_guild:
-            # Ensure the guild is actually configured for the competition
-            gc = await self.cfg_svc.get_guild_config(target_guild.id)
-            if not gc:
-                target_guild = None
-
-        # 8) Refresh submission list
-        if target_guild:
             await refresh_submission_list(
-                bot    = self.bot,
-                cfg_svc= self.cfg_svc,
-                sub_svc= self.sub_svc,
-                guild  = target_guild,
+                bot=self.bot,
+                cfg_svc=self.cfg_svc,
+                guild=target_guild,
             )
 
-        # 9) Assign submitted role if not a speed-task
+        # 6) Assign the “submitted” role (non-speed tasks only)
         if target_guild and not task.speed_task:
-            gc         = await self.cfg_svc.get_guild_config(target_guild.id)
             submit_cfg = await self.cfg_svc.get_submitter_role(gc.comp)
             if submit_cfg and submit_cfg.role_id:
                 if submission.team:
-                    for u in submission.team.members:
-                        await add_role_to_member(target_guild, u.discord_id, submit_cfg.role_id)
+                    for member in submission.team.members:
+                        await add_role_to_member(
+                            target_guild, member.discord_id, submit_cfg.role_id
+                        )
                 else:
-                    await add_role_to_member(target_guild, msg.author.id, submit_cfg.role_id)
+                    await add_role_to_member(
+                        target_guild, msg.author.id, submit_cfg.role_id
+                    )
 
-        # 10) Confirm submission to the user
+        # 7) Ack
         extension = (msg.attachments[0].filename.lower().split("."))[1]
-        return await msg.channel.send(f"`.{extension}` file detected!\n"
+        await msg.channel.send(f"`.{extension}` file detected!\n"
                                             f"The file was successfully saved. Type `$info` for more information "
                                             f"about the file."
                                       )
+
 
 
 async def setup(bot: commands.Bot):
@@ -168,7 +171,6 @@ async def setup(bot: commands.Bot):
         bot (commands.Bot): The Discord bot instance.
     """
     cog = DMSubmissionListener(
-        submission_service=bot.submission_service,
         speed_svc=         bot.speed_task_service,
         task_mgr=          bot.task_manager,
         config_service=    bot.config_service,

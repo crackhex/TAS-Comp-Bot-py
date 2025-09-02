@@ -24,7 +24,7 @@ Responsibilities:
         * SubmissionChannel
 """
 
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy import select, delete
 from infrastructure.db import SessionLocal
 from domain.repositories import ConfigRepository
@@ -32,13 +32,13 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
 )
 from infrastructure.orm.orm_models import (
     LogChannelORM, HostRoleORM, SubmitterRoleORM,
     SeekingChannelORM, TasksChannelORM, AnnouncementsChannelORM,
     SpeedTaskLengthORM, SpeedTaskDescORM,
-    SpeedTaskRemindersORM, ReminderPingsORM, GuildConfigORM, SubmissionChannelORM,
+    SpeedTaskRemindersORM, ReminderPingsORM, GuildConfigORM, SubmissionChannelORM, SubmissionFileConfigORM,
 )
 
 
@@ -283,6 +283,14 @@ class SqlAlchemyConfigRepository(ConfigRepository):
             )).first()
             return row.to_domain() if row else None
 
+    async def list_guild_configs(self) -> List[GuildConfig]:
+        async with self._sf() as sess:
+            result = await sess.scalars(
+                select(GuildConfigORM)
+            )
+            rows: List[GuildConfigORM] = result.all()
+            return [row.to_domain() for row in rows]
+
     async def save_guild_config(self, cfg: GuildConfig) -> None:
         async with self._sf() as sess:
             row = (await sess.scalars(
@@ -292,4 +300,24 @@ class SqlAlchemyConfigRepository(ConfigRepository):
                 row.comp = cfg.comp
             else:
                 sess.add(GuildConfigORM.from_domain(cfg))
+            await sess.commit()
+
+
+    async def get_submission_file_extension(self, comp: str) -> Optional[SubmissionFileConfig]:
+        async with self._sf() as sess:
+            row = (await sess.scalars(
+                select(SubmissionFileConfigORM).where(SubmissionFileConfigORM.comp == comp)
+            )).first()
+            return row.to_domain() if row else None
+
+    async def save_submission_file_extension(self, cfg: SubmissionFileConfig) -> None:
+        async with self._sf() as sess:
+            row = (await sess.scalars(
+                select(SubmissionFileConfigORM).where(SubmissionFileConfigORM.comp == cfg.comp)
+            )).first()
+            if row:
+                row.ext = cfg.ext.lower()
+                row.guild_id = cfg.guild_id
+            else:
+                sess.add(SubmissionFileConfigORM.from_domain(cfg))
             await sess.commit()
