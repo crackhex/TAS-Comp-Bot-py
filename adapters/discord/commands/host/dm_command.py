@@ -23,7 +23,17 @@ class DM(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.hybrid_command(name="dm", description="Dm a user", with_app_command=True)
+    @commands.hybrid_command(
+        name="dm",
+        description="[Host] Dm a user",
+        usage="/dm <User>",
+        help=("""
+            Dm a user. 
+
+            Parameters:
+                `User`: The user to send a message to.
+            """),
+        with_app_command=True)
     @host_only()
     async def command(self, ctx, user: discord.Member, *, message):
         """Send a direct message to a user"""

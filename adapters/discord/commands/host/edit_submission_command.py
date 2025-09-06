@@ -57,6 +57,16 @@ class EditSubmissionCommand(commands.Cog):
     @commands.hybrid_command(
         name="edit-submission",
         description="[Host] Modify a submission (time and/or DQ status).",
+        usage="/edit-submission <member> <new_time> <dq> [dq_reason]",
+        help=("""
+            Edit a competitor's submission. This notifies the competitor of the change, aswell as their teammates if in a team.
+
+            Parameters:
+                `member`: Target competitor whose submission is edited.
+                `new_time`: New run time (in seconds. e.g. for 1:20.456, write 80.456).
+                `dq`: Whether (True/False) the submission is disqualified.
+                `dq_reason`: Reason for DQ (required when dq=True).
+            """),
         with_app_command=True,
     )
     @host_only()

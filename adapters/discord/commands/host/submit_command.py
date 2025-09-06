@@ -55,6 +55,14 @@ class SubmitCommand(commands.Cog):
     @commands.hybrid_command(
         name="submit",
         description="[Host] Submit a file on behalf of a competitor.",
+        usage="/submit <member> <file>",
+        help=("""
+            Submit on behalf of a competitor.
+
+            Parameters:
+                `member`: The member for who we wanna submit
+                `file`: The submission file to be submitted.
+        """),
         with_app_command=True,
     )
     @host_only()
@@ -79,7 +87,7 @@ class SubmitCommand(commands.Cog):
         Args:
             ctx (commands.Context): Invocation context.
             member (discord.Member): Target user for whom we submit.
-            file (discord.Attachment): The uploaded `.rkg` or `.rksys` file.
+            file (discord.Attachment): The uploaded `.rkg` or `.dat` file.
 
         Returns:
             None
@@ -138,13 +146,7 @@ class SubmitCommand(commands.Cog):
                 await add_role_to_member(ctx.guild, member.id, submit_cfg.role_id)
 
         # 7) Confirmation message with formatted time and URL
-        secs = submission.time
-        mins = int(secs // 60)
-        rem  = secs - mins * 60
-        timestamp = f"{mins}:{rem:06.3f}"
-        await ctx.send(
-            f"Succesfully submitted for {member.mention}: **{timestamp}**\n{file.url}"
-        )
+        return await ctx.send(f"Succesfully submitted for {member.mention}.")
 
 
 async def setup(bot: commands.Bot):

@@ -34,7 +34,16 @@ class SyncCommand(commands.Cog):
         """
         self.bot = bot
 
-    @commands.command(name="sync")
+    @commands.command(
+        name="sync",
+        usage = "$sync",
+        help = ("""
+                Synchronization of the bot's slash commands. Usable by bot owner only!
+
+                Parameters:
+                None
+        """),
+    )
     @commands.is_owner()
     async def sync(self, ctx: commands.Context):
         """

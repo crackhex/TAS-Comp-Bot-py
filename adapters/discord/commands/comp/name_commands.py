@@ -47,10 +47,18 @@ class NameCommands(commands.Cog):
         self.cfg_svc   = config_service
 
     # ──────────── ADMIN : /setname ────────────
-    @commands.hybrid_command(
+    @commands.command(
         name="setname",
-        description="(Admin) Update a competitor's display name.",
+        usage="$setname <member> <name>",
+        help=("""
+                Admin command for changing a competitor's name.
+
+                Parameters:
+                `member`: The member whose name to change.
+                `name`: The team name. Length must be at most 120 characters, and name must contain no `@`.
+        """),
     )
+
     @commands.has_permissions(administrator=True)
     async def set_name(
         self,
@@ -63,6 +71,7 @@ class NameCommands(commands.Cog):
         Update a competitor's display name, with basic validation.
 
         Args:
+            ctx (commands.Context): Invocation context
             member (discord.Member): Target user.
             new_name (str): New display name (<= 120 chars, no '@').
         """
@@ -85,10 +94,16 @@ class NameCommands(commands.Cog):
 
         return await ctx.send(f"✅ {member.mention}'s name updated → **{user.display_name}**")
 
-    # ────────── Player : /setteamname ──────────
-    @commands.hybrid_command(
+    # ──────────── PLAYER : /setteamname ────────────
+    @commands.command(
         name="setteamname",
-        description="Set your team's name.",
+        usage="$setteamname <name>",
+        help=("""
+            Change your team's name during a collab task. 
+
+            Parameters:
+            `name`: The team name. Length must be at most 120 characters, and name must contain no `@`.
+    """),
     )
     async def set_team_name(
         self,

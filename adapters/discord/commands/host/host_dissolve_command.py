@@ -54,6 +54,13 @@ class HostDissolveCommand(commands.Cog):
     @commands.hybrid_command(
         name="hostdissolve",
         description="[Host] Dissolve a competitor's team, and remove their submission if applicable.",
+        usage="$/hostdissolve <member>",
+        help=("""
+            Dissolve someone's team during a collab task. This also deletes the team's submission, if applicable. This is usable on anyone in the team.
+
+            Parameters:
+                `member`: The member whose team will be dissolved. 
+        """),
         with_app_command=True,
     )
     @host_only()

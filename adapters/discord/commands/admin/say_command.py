@@ -34,7 +34,17 @@ class Say(commands.Cog):
         """
         self.bot = bot
 
-    @commands.command(name="say")
+    @commands.command(
+        name="say",
+        usage = "$say <text_channel> <message>",
+        help = ("""
+                Say something through the bot.
+    
+                Parameters:
+                `text_channel`: The text channel in which the message will be sent.
+                `message`: The message to send.
+        """),
+    )
     @commands.has_permissions(administrator=True)
     async def command(self, ctx: commands.Context, channel: discord.TextChannel, *, message: str) -> None:
         """

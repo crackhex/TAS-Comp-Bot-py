@@ -42,7 +42,7 @@ if not TOKEN:
 # ────────────────────────── BOT ACTIVITY ───────────────────────────
 activity = discord.Game(name="Dolphin Emulator")
 
-# ────────────────────────── EXTENSIONS -----------------------------
+# ────────────────────────── EXTENSIONS  ────────────────────────────
 commands_ext = [
     "adapters.discord.commands.admin.config_commands",
     "adapters.discord.commands.admin.error_test_commands",
@@ -55,10 +55,15 @@ commands_ext = [
     "adapters.discord.commands.comp.request_task_command",
     "adapters.discord.commands.comp.stop_timer_command",
     "adapters.discord.commands.comp.teams_command",
+    "adapters.discord.commands.fun.8balls_command",
+    "adapters.discord.commands.fun.quote_command",
+    "adapters.discord.commands.fun.slots_command",
+    "adapters.discord.commands.help_command",
     "adapters.discord.commands.host.delete_submission_command",
     "adapters.discord.commands.host.dm_command",
     "adapters.discord.commands.host.edit_submission_command",
     "adapters.discord.commands.host.end_task_command",
+    "adapters.discord.commands.host.get_results_command",
     "adapters.discord.commands.host.get_submissions_command",
     "adapters.discord.commands.host.host_dissolve_command",
     "adapters.discord.commands.host.set_deadline_command",
@@ -151,7 +156,7 @@ async def _bootstrap() -> None:
 
     guild_mappings = await config_service.list_guild_configs()
     if guild_mappings:
-        comp_key = guild_mappings[0].comp  # 'mkw', 'sm64', …
+        comp_key = guild_mappings[0].comp  # 'mkw', 'sm64', ...
         ext_cfg = await config_service.get_submission_file_extension(comp_key)
 
         if ext_cfg and ext_cfg.ext == "rkg":
@@ -207,7 +212,6 @@ async def _bootstrap() -> None:
     bot.file_parser        = file_parser
 
     # 7) Finally run the bot
-    bot.remove_command("help")
     await bot.start(TOKEN)
 
 # ──────────── Main ───────────

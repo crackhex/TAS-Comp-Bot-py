@@ -14,6 +14,7 @@ Responsibilities:
     - update_display_name: set a new display name for an existing user
     - award_coins: increment a user's coin balance
 """
+from typing import List
 
 import discord
 from domain.entities import User
@@ -120,3 +121,9 @@ class UserService:
         # Persist updated user
         await self._user_repo.save(user)
         return user
+
+    async def list_users(self) -> List[User]:
+        """
+        Return all users known to the application.
+        """
+        return await self._user_repo.list_users()

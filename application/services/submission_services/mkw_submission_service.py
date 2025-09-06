@@ -121,7 +121,7 @@ class MKWSubmissionService(BaseSubmissionService):
         Extract MKW-specific metadata and copy it onto ``submission``.
 
         * run_time → submission.time
-        * character`` / vehicle if available (only on RKG), else None
+        * character / vehicle if available (only on RKG), else None
         """
         # If rkg, retrieve run_time, else set to 0 if rksys (or time isn't found)
         if hasattr(file_obj, "run_time"):

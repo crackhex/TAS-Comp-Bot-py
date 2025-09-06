@@ -33,7 +33,6 @@ from pydantic import ValidationError
 from adapters.discord.checks import host_only
 from adapters.discord.utils.role_utils import clear_role_for_guild
 from application.models import TaskConfig
-from application.parsers.null_parser import NullParser
 from application.services.task_manager import TaskManager
 from application.services.config_service import ConfigService
 
@@ -62,6 +61,17 @@ class StartTaskCommand(commands.Cog):
     @commands.hybrid_command(
         name="start-task",
         description="[Host] Start a new task",
+        usage="/start-task <number> <deadline> [year] [team_size] [speed_task]",
+        help=("""
+        Start a new task, and set its behaviour (collab, speed task, deadline)
+        
+        Parameters:
+            `number`: Task number.
+            `deadline`: Absolute deadline (UNIX epoch seconds). Use https://www.hammertime.cyou
+            `year`: You can leave this blank, this is autocompleted.
+            `team_size`: Maximum players per team (leave blank (or write 1) for solo).
+            `speed_task`: If True, task starts hidden and will be released later.
+        """),
         with_app_command=True
     )
     @host_only()
@@ -90,8 +100,8 @@ class StartTaskCommand(commands.Cog):
 
         Args:
             ctx (commands.Context): Invocation context.
-            number (int): Task number (competition identifier).
-            year (Optional[int]): Year (defaults via Pydantic validator if omitted).
+            number (int): Task number.
+            year (Optional[int]): Year (auto-completed if omitted.
             team_size (int): Maximum players per team (1 for solo).
             speed_task (bool): If True, task starts hidden and will be released later.
             deadline (int): Absolute deadline (UNIX epoch seconds).

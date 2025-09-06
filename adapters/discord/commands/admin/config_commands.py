@@ -44,6 +44,13 @@ class ConfigCommands(commands.Cog):
     @commands.hybrid_command(
         name="set-comp",
         description="Associate this Discord server with a competition (e.g. MKWii).",
+        usage="/set-comp <comp>",
+        help=("""
+                Associate this Discord server with a competition.
+    
+                Parameters:
+                `comp`: Choice between the different configured comps; such as mkw, nsmbw, sm64.
+            """),
         with_app_command=True,
     )
     @commands.has_permissions(administrator=True)
@@ -53,8 +60,8 @@ class ConfigCommands(commands.Cog):
     @app_commands.choices(
         comp=[
             app_commands.Choice(name="Mario Kart Wii", value="mkw"),
-            # app_commands.Choice(name="New Super Mario Bros. Wii", value="nsmbw"),
-            # app_commands.Choice(name="Super Mario 64", value="sm64"),
+            app_commands.Choice(name="New Super Mario Bros. Wii", value="nsmbw"),
+            app_commands.Choice(name="Super Mario 64", value="sm64"),
         ]
     )
     async def set_comp(
@@ -94,9 +101,15 @@ class ConfigCommands(commands.Cog):
             f"Mapping guild → comp saved: **{comp}** for this server."
         )
 
-    @commands.hybrid_command(
+    @commands.command(
         name="show-comp",
-        description="Display the competition associated with this server.",
+        usage="$show-comp",
+        help=("""
+            Display the competition associated with this server.
+
+            Parameters:
+            None
+        """),
     )
     async def show_comp(self, ctx: commands.Context):
         """
@@ -119,12 +132,24 @@ class ConfigCommands(commands.Cog):
     @commands.hybrid_command(
         name="config",
         description="Configure core roles & channels",
+        usage="/config [host_role] [submitter_role] [log_channel] [submission_channel] [seeking_channel] [tasks_channel] [announcements_channel]",
+        help=("""
+            Configure core roles & channels. All parameters are optional; you can update them all, ore only those needed. 
+
+            Parameters:
+            `host_role`: The host role; who is able to use host commands.
+            `submitter_role`: The submitter roled to be assigned when someone submits.
+            `log_channel`: The logging channel where stuff like DMs and errors are stored.
+            `submission_channel`: The channel in which to show the submission list.
+            `seeking_channel`: Currently unused...
+            `tasks_channel`: For speed tasks, the task is posted in this channel once ready to reveal.
+            `announcements_channel`: For announcing stuff, such as when a speed task is revealed.
+        """),
     )
     @commands.has_permissions(administrator=True)
     async def config(
         self,
         ctx: commands.Context,
-        # Converters work for both slash and prefix invocations
         host_role: Optional[discord.Role] = None,
         submitter_role: Optional[discord.Role] = None,
         log_channel: Optional[discord.TextChannel] = None,
@@ -196,7 +221,7 @@ class ConfigCommands(commands.Cog):
         if not updates:
             return await ctx.send("No parameters provided; nothing to update.")
 
-        await ctx.send("Updated:\n" + "\n".join(f"• {u}" for u in updates))
+        return await ctx.send("Updated:\n" + "\n".join(f"• {u}" for u in updates))
 
 
 # ───────────────────────────── Extension setup ────────────────────────────── #

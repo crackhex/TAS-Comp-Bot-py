@@ -48,7 +48,16 @@ class RequestTaskCommand(commands.Cog):
         self.task_mgr  = task_mgr
         self.cfg_svc   = cfg_svc
 
-    @commands.command(name="requesttask")
+    @commands.command(
+        name="requesttask",
+        usage="$requesttask",
+        help=("""
+            Request the speed task (if one is ongoing). The task will be sent to you in DMs. Warning: No confirmation.
+
+            Parameters:
+            None
+    """),
+    )
     async def requesttask(self, ctx: commands.Context):
         """
         Start (only once per task) a personal speed-task session for the invoking user.

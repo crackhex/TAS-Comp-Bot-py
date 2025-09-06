@@ -46,7 +46,17 @@ class LeaveTeamCommand(commands.Cog):
         self.task_mgr       = task_mgr
         self.cfg_svc        = config_svc
 
-    @commands.command(name="leaveteam")
+    @commands.command(
+        name="leaveteam",
+        usage = "$leaveteam",
+        help = ("""
+                Leave your team during a collab task. 
+    
+                Parameters:
+                    None
+        """),
+    )
+
     async def leave_team(self, ctx: commands.Context):
         """
         Remove the invoking user from their team (or dissolve the team if only two members).
@@ -86,6 +96,9 @@ class LeaveTeamCommand(commands.Cog):
 
         # 5) If the team would fall to 1 member, dissolve; else remove only the caller
         if len(team.members) == 2:
+            # Remove submission if there is a submission
+            await ctx.bot.submission_service.remove_submission(ctx.author.id)
+
             # Dissolve team
             await self.team_svc.dissolve_team(team.id)
             await ctx.send("Your team has been dissolved (there is no one left in it).")

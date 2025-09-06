@@ -199,16 +199,11 @@ class RKGFile(SubmissionFile):
 
 class RKSysFile(SubmissionFile):
     """
-    Represents an .rksys file with a system tag.
+    Represents a rksys.dat file.
     """
 
-    def __init__(self, path: str, uploaded_at: int, system_tag: str):
-        """
-        Args:
-            system_tag (str): internal system identifier.
-        """
+    def __init__(self, path: str, uploaded_at: int):
         super().__init__(path, uploaded_at)
-        self.system_tag = system_tag
         self.run_time = 0.0  # no run time available
 
 

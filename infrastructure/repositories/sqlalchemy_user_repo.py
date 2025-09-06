@@ -13,6 +13,8 @@ Responsibilities:
     - save(user): update an existing User’s handle and display_name
     - get_by_discord_id(discord_id): load a User by Discord ID
 """
+from typing import List
+
 from sqlalchemy import select, update
 from infrastructure.db import SessionLocal
 from infrastructure.orm.orm_models import UserORM
@@ -89,3 +91,14 @@ class SqlAlchemyUserRepository(UserRepository):
                 select(UserORM).where(UserORM.user_id == discord_id)
             )).first()
         return row.to_domain() if row else None
+
+    async def list_users(self) -> List[User]:
+        """
+        Return the full list of users in the database as domain User objects.
+
+        Returns:
+            List[User]: all users persisted in the database.
+        """
+        async with self._sf() as sess:
+            rows = (await sess.scalars(select(UserORM))).all()
+        return [r.to_domain() for r in rows] if rows else []

@@ -2,12 +2,11 @@
 Null / Fallback Parser
 ======================
 
-Always returns *False* from ``supports`` and raises a clear exception from
-``parse``.  This lets the bot start with “no parser selected” while still
+Always returns False from supports(...) and raises a clear exception from
+parse(...).  This lets the bot start with “no parser selected” while still
 satisfying the ParserStrategy protocol.
 """
 
-from domain.entities import SubmissionFile
 from .parser_strategy import ParserStrategy
 
 
@@ -15,7 +14,7 @@ class NullParser(ParserStrategy):
     """ParserStrategy that never matches any file type."""
 
     # ──────────────────────────────────────────────── #
-    # Protocol implementation                         #
+    # Protocol implementation                          #
     # ──────────────────────────────────────────────── #
 
     def supports(self, file_bytes: bytes) -> bool:

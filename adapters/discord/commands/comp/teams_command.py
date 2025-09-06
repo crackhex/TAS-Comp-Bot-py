@@ -44,14 +44,19 @@ class TeamsCommand(commands.Cog):
         self.team_svc  = team_service
         self.task_mgr  = task_manager
 
-    @commands.hybrid_command(
+    @commands.command(
         name="teams",
-        description="List all confirmed teams for the current or last competition.",
-        with_app_command=True,
+        usage="$teams",
+        help=("""
+            List confirmed teams for the active collab competition
+
+            Parameters:
+            None
+    """),
     )
     async def teams(self, ctx: commands.Context):
         """
-        List confirmed teams for the active competition, or the last one if none is active.
+        List confirmed teams for the active competition
 
         Steps:
             1) Retrieve the active task

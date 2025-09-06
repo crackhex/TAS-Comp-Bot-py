@@ -37,6 +37,13 @@ class SpeedTaskConfigCommands(commands.Cog):
     @commands.hybrid_command(
         name="speed-task-desc",
         description="[Host] Set the Speed-Task description text.",
+        usage="$speed-task-desc <desc>",
+        help=("""
+            Set the task description for a speed task. This must be used before starting the speed task.
+
+            Parameters:
+                `desc`: The speed task description
+        """),
         with_app_command=True,
     )
     @host_only()
@@ -79,6 +86,13 @@ class SpeedTaskConfigCommands(commands.Cog):
     @commands.hybrid_command(
         name="speed-task-length",
         description="[Host] Set the Speed-Task duration (in hours).",
+        usage="$speed-task-length <hours>",
+        help=("""
+            Set the amount of time player have upon requesting the speed task (or when it's publicly revealed)
+
+            Parameters:
+                `length`: The speed task length, in hours.
+        """),
         with_app_command=True,
     )
     @host_only()
@@ -116,11 +130,19 @@ class SpeedTaskConfigCommands(commands.Cog):
             guild_id = ctx.guild.id,
         )
 
-        await ctx.send(f"The speed task length has been updated! → **{hours}** hour(s).")
+        return await ctx.send(f"The speed task length has been updated! → **{hours}** hour(s).")
 
     @commands.hybrid_command(
         name="speed-task-reminders",
         description="[Host] Set 1–4 reminder times (in minutes) before the speed task session ends.",
+        usage="$speed-task-reminders <minutes>",
+        help=("""
+            Set up to 4 reminders times before the speed task session ends.
+
+            Parameters:
+                `minutes`: The reminders, which happens at X minutes before someone's deadline (or the general deadline).
+                Separate the reminders by a space.
+        """),
         with_app_command=True,
     )
     @host_only()

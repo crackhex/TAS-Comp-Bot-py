@@ -14,9 +14,11 @@ Responsibilities:
     - Resolve the active task (fallback to the last task if it's past deadline).
     - Fetch all submissions for that task via SubmissionService.
     - Split output into multiple messages under Discord size limits.
+    - Provide a batch file to download all ghosts.
 """
 
 import asyncio
+import io
 from typing import List
 
 import discord
@@ -56,13 +58,23 @@ class GetSubmissionsCommand(commands.Cog):
 
     def __init__(
         self,
-        task_manager:       TaskManager,
-    ):
+        task_manager: TaskManager,
+):
         self.task_mgr = task_manager
 
     @commands.hybrid_command(
         name="get-submissions",
         description="[Host] Retrieves all submissions for the current task",
+        usage="$/get-submissions",
+        help=("Retrieves all submission for the latest task. This shows, for each submission, the user (and their team "
+              "if applicable),  the time at which the file was submitted, and the time of the run itself. "
+              "\n\nNote that unless the submission has been manually "
+              "edited using /edit-submissions, the fetched timed may be unknown or wrong. This can happen if the "
+              "competition is backwards, or is on multiple tracks.\n\n"
+            
+            "Parameters:\n"
+                "None"
+        ),
     )
     @host_only()
     async def get_submissions(self, ctx: commands.Context):
@@ -77,6 +89,7 @@ class GetSubmissionsCommand(commands.Cog):
             4) Build formatted lines for solo/team entries.
             5) Chunk lines into messages under ~1950 chars.
             6) Send messages with a header on the first chunk.
+            7) Send a batch file which downloads all the ghosts
 
         Args:
             ctx (commands.Context): Invocation context.
@@ -84,7 +97,7 @@ class GetSubmissionsCommand(commands.Cog):
         Returns:
             None
         """
-        # 1) Prefer active task; else fall back to last task
+        # 1) Load active task, else last task
         task = await self.task_mgr.get_active_task()
         if not task:
             task = await self.task_mgr.get_last_task()
@@ -150,7 +163,41 @@ class GetSubmissionsCommand(commands.Cog):
             # Small delay to avoid rate limits
             await asyncio.sleep(1)
 
+
+    # Generate a Windows batch script to download all submission files
+
+        # collect all URLs
+        download_lines = ['@echo off', '']
+        comp = (await ctx.bot.config_service.get_guild_config(ctx.guild.id)).comp
+        file_ext = (await ctx.bot.config_service.get_submission_file_extension(comp)).ext.lower()
+
+
+        # adding the curl command for each file
+        for sub in subs:
+            submitter = (sub.submitted_by.display_name).replace(" ", "_")
+            download_lines.append(
+                f'curl -L -o "Task{task.number}{submitter}.{file_ext}" "{sub.file.path}"'
+            )
+
+
+        download_lines += [
+            "",
+            "echo All downloads complete.",
+            "pause"
+        ]
+
+        script_content = "\r\n".join(download_lines)
+        script_path = f"Task{task.number}Ghosts.bat"
+
+        # Create bat file
+        buffer = io.BytesIO(script_content.encode("utf-8"))
+        buffer.seek(0)
+
+        await ctx.send("Download all runs: ",file = discord.File(buffer, filename=script_path))
+
+
         return None
+
 
 
 async def setup(bot: commands.Bot) -> None:

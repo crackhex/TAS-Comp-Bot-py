@@ -22,7 +22,7 @@ class RksysParser(ParserStrategy):
     Concrete ParserStrategy for RKSys files.
 
     supports(): accepts any file that has the RKSD header.
-    parse(): returns an RKSysFile with system_tag placeholder.
+    parse(): returns an RKSysFile
     """
 
     def supports(self, file_bytes: bytes) -> bool:
@@ -40,10 +40,9 @@ class RksysParser(ParserStrategy):
             uploaded_at (int): UNIX timestamp when file was received
 
         Returns:
-            RKSysFile: with default system_tag="" and run_time=0.0
+            RKSysFile: with run_time=0.0
         """
         return RKSysFile(
             path="",
             uploaded_at=uploaded_at,
-            system_tag="",
         )

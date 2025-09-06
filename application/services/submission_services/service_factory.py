@@ -6,8 +6,8 @@ Module path:
     src/application/services/submission_services/service_factory.py
 
 Summary:
-    Central place that **maps a competition key** ("mkw", "sm64", …) to the
-    concreteSubmissionService* class able to parse, validate and persist runs for
+    Central place that maps a competition key ("mkw", "sm64", ...) to the
+    concreteSubmissionService class able to parse, validate and persist runs for
     that game.
 
     Adding support for a new game requires:
@@ -15,7 +15,7 @@ Summary:
     1. Implementing a concrete XXXSubmissionService that derives fromBaseSubmissionService`.
     2. Importing it here and registering a new key in
         SubmissionServiceFactory – the rest of the bot remains unchanged.
-    3. Register the file extension in main.
+    3. Register the file extension in main, and in entities.
 
 """
 from typing import Dict, Type

@@ -38,7 +38,7 @@ from application.services.config_service import ConfigService
 # --------------------------------------------------------------------------- #
 EXTENSION_STRATEGIES: Dict[str, Type[ParserStrategy]] = {
     "rkg":   RkgParser,
-    "rksys": RksysParser,
+    "dat": RksysParser, # rksys.dat
 }
 
 ALLOWED_CHOICES = [
@@ -54,6 +54,14 @@ class SetFileCommand(commands.Cog):
     @commands.hybrid_command(
         name="set-file",
         description="[Host] Define the file extension accepted for submissions.",
+        usage="$/set-file <ext>",
+        help=("""
+            Change the file extension accepted for submissions
+
+            Parameters:
+                `ext`: The file extension that will be accepted for submissions. For Mario Kart Wii, this is rkg and rksys.
+    """),
+        with_app_command=True,
     )
     @host_only()
     @app_commands.describe(ext="Choose the extension")
@@ -91,7 +99,7 @@ class SetFileCommand(commands.Cog):
         ctx.bot.file_parser.set_strategy(StrategyClass())
 
         # 4) Acknowledge
-        await ctx.send(f"✅ Accepted submission file extension set to **.{ext.value}**")
+        return await ctx.send(f"✅ Accepted submission file extension set to **.{ext.value}**")
 
     # --------------------------------------------------------------------- #
     # Error handling                                                        #

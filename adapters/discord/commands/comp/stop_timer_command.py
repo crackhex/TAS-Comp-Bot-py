@@ -114,10 +114,16 @@ class StopTimerCommand(commands.Cog):
         self.task_mgr  = task_mgr
         self.cfg_svc   = cfg_svc
 
-    @commands.hybrid_command(
+    @commands.command(
         name="stop-timer",
         aliases=["end-timer"],
-        description="End your speed-task early, or end another competitor’s timer if you are a host.",
+        usage="$stop-timer [member]",
+        help=("""
+            End your speed-task early, or end another competitor’s timer if you are a host.
+
+            Parameters:
+            `member`: [Host-only] Optionally, the member whose timer to end.
+    """),
     )
     async def stop_timer(
         self,

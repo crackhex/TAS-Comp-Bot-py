@@ -32,7 +32,14 @@ class EndTaskCommand(commands.Cog):
 
     @commands.hybrid_command(
         name="end-task",
-        description="[Host] Close the active task."
+        description="[Host] Close the active task.",
+        usage = "$/end-task",
+        help = ("""
+            Ends a task. This means submissions aren't accepted anymore. Note that this does not delete the submission list. 
+
+            Parameters:
+                None
+        """),
     )
     @host_only()
     async def end_task(self, ctx: commands.Context):

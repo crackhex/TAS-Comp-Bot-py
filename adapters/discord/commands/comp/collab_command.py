@@ -168,9 +168,15 @@ class CollabCommand(commands.Cog):
         # pending : {inviter_id: {invitee_id: Optional[bool]}}
         self._pending: Dict[int, Dict[int, bool | None]] = {}
 
-    @commands.hybrid_command(
+    @commands.command(
         name="collab",
-        description="Invite one or multiple people to your team during a collab task!",
+        usage="$collab <member>",
+        help=("""
+            Invite one or multiple people to collaborate during a team task!
+
+            Parameters:
+            `member`: Competitors to invite. You may invite more than one at once, if applicable!
+    """),
     )
     async def collab(
         self,

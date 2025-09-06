@@ -50,6 +50,13 @@ class DeleteSubmissionCommand(commands.Cog):
     @commands.hybrid_command(
         name="delete-submission",
         description="[Host] Delete a competitor's (or team) submission.",
+        usage="/delete-submission <Member>",
+        help=("""
+        Delete a competitor's (or team) submission. This removes their run from the database, and from the submission list.
+
+        Parameters:
+            `Member`: The competitor whose submission will be deleted.
+        """),
         with_app_command=True,
     )
     @host_only()

@@ -20,6 +20,8 @@ from __future__ import annotations
 import discord
 from discord.ext import commands
 
+
+
 def float_to_readable(t: float | None) -> str:
     """Convert a run time in *seconds* to ``M:SS.mmm``."""
     if t is None or t <= 0:
@@ -132,7 +134,18 @@ class InfoCommand(commands.Cog):
         self.bot = bot
 
 
-    @commands.command(name="info", aliases=("status",))
+    @commands.command(
+        name="info",
+        aliases=["status"],
+        usage = "$info",
+        help = ("""
+                Show information about your submission, such as time, upload date, status (DQ or not), etc. This is a DM only command.
+    
+                Parameters:
+                None.
+        """),
+
+    )
     @commands.dm_only()
     async def info(self, ctx: commands.Context) -> None:
         """Reply with an embed describing the current submission."""
@@ -140,6 +153,7 @@ class InfoCommand(commands.Cog):
         submission_svc    = self.bot.submission_service
         team_svc          = self.bot.team_service
         task_mgr          = self.bot.task_manager
+        cfg_svc           = self.bot.config_service
 
         # 1) Retrieve task
         task = await task_mgr.get_active_task() or await task_mgr.get_last_task()
@@ -171,7 +185,7 @@ class InfoCommand(commands.Cog):
             colour=discord.Colour.green(),
         )
 
-        # row 0  – file (full width)
+        # row 0  – file
         embed.add_field(name="File", value=sub.url or "(no URL)", inline=False)
 
         # row 1  – Time │ Uploaded │
@@ -183,7 +197,7 @@ class InfoCommand(commands.Cog):
         embed.add_field(name="Uploaded", value=uploaded, inline=True)
         pad_row(embed)
 
-        #row 2   Character │ Vehicle │
+        # row 2   Character │ Vehicle │
         embed.add_field(
             name="Character",
             value=MKW_CHARACTERS.get(int(sub.character), f"ID {sub.character}")
@@ -198,7 +212,7 @@ class InfoCommand(commands.Cog):
         )
         pad_row(embed)
 
-        # ── row 3  – DQ │ DQ reason │
+        # row 3  – DQ │ DQ reason │
         embed.add_field(name="DQ", value=str(bool(sub.dq)), inline=True)
         embed.add_field(
             name="DQ reason",
@@ -206,6 +220,16 @@ class InfoCommand(commands.Cog):
             inline=True,
         )
         pad_row(embed)
+
+        # Gap at the end?
+        #embed.add_field(name="\u200b", value="\u200b")
+
+        # Retrieve guild (to get server icon)
+        guild_list = await cfg_svc.list_guild_configs()
+        guild_id = guild_list[0].guild_id
+        guild = self.bot.get_guild(guild_id)
+
+        embed.set_footer(text="TAS Competition Info", icon_url=guild.icon.url if guild.icon else None)
 
         await ctx.reply(embed=embed)
 
