@@ -27,7 +27,7 @@ from application.services.team_service       import TeamService
 from application.services.task_manager       import TaskManager
 from application.services.config_service     import ConfigService
 
-MAX_LEN     = 120
+MAX_LEN     = 50
 INVALID_PAT = re.compile(r"[@]")
 
 
@@ -51,11 +51,11 @@ class NameCommands(commands.Cog):
         name="setname",
         usage="$setname <member> <name>",
         help=("""
-                Admin command for changing a competitor's name.
+                Sets a competitor's name to a preferred alias different to their display name.
 
                 Parameters:
                 `member`: The member whose name to change.
-                `name`: The team name. Length must be at most 120 characters, and name must contain no `@`.
+                `name`: The name. Length must be at most 50 characters, and the name may not contain `@`.
         """),
     )
 
@@ -73,11 +73,11 @@ class NameCommands(commands.Cog):
         Args:
             ctx (commands.Context): Invocation context
             member (discord.Member): Target user.
-            new_name (str): New display name (<= 120 chars, no '@').
+            new_name (str): New display name (<= 50 chars, no '@').
         """
         # 1) Validate input
         if len(new_name) > MAX_LEN or INVALID_PAT.search(new_name):
-            return await ctx.send("Invalid name (max 120 chars, no '@').")
+            return await ctx.send("Invalid name (max 50 chars, no '@').")
 
         # 2) Update in domain
         try:
@@ -99,10 +99,10 @@ class NameCommands(commands.Cog):
         name="setteamname",
         usage="$setteamname <name>",
         help=("""
-            Change your team's name during a collab task. 
+            Changes your team name in a collab task. 
 
             Parameters:
-            `name`: The team name. Length must be at most 120 characters, and name must contain no `@`.
+            `name`: The team name. Length must be at most 50 characters, and the name may not contain `@`.
     """),
     )
     async def set_team_name(
@@ -112,14 +112,14 @@ class NameCommands(commands.Cog):
         new_team_name: str,
     ):
         """
-        Rename the calling player's team.
+        Rename the calling competitor's team.
 
         Args:
-            new_team_name (str): New team name (<= 120 chars, no '@').
+            new_team_name (str): New team name (<= 50 chars, no '@').
         """
         # 1) Validate input
         if len(new_team_name) > MAX_LEN or INVALID_PAT.search(new_team_name):
-            return await ctx.send("Invalid team name (max 120 chars, no '@').")
+            return await ctx.send("Invalid team name (max 50 chars, no '@').")
 
         # 2) Must have an active team-based competition
         task = await self.task_mgr.get_active_task()

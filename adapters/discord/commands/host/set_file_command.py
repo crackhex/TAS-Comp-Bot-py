@@ -56,7 +56,7 @@ class SetFileCommand(commands.Cog):
         description="[Host] Define the file extension accepted for submissions.",
         usage="$/set-file <ext>",
         help=("""
-            Change the file extension accepted for submissions
+            Sets the file extension accepted for submissions.
 
             Parameters:
                 `ext`: The file extension that will be accepted for submissions. For Mario Kart Wii, this is rkg and rksys.

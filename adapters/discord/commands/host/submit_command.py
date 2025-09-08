@@ -57,10 +57,10 @@ class SubmitCommand(commands.Cog):
         description="[Host] Submit a file on behalf of a competitor.",
         usage="/submit <member> <file>",
         help=("""
-            Submit on behalf of a competitor.
+            Submits on behalf of another competitor.
 
             Parameters:
-                `member`: The member for who we wanna submit
+                `member`: The competitor for who we wanna submit
                 `file`: The submission file to be submitted.
         """),
         with_app_command=True,

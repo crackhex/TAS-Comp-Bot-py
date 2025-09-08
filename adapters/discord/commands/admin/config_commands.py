@@ -46,7 +46,7 @@ class ConfigCommands(commands.Cog):
         description="Associate this Discord server with a competition (e.g. MKWii).",
         usage="/set-comp <comp>",
         help=("""
-                Associate this Discord server with a competition.
+                Associates this Discord server with a competition.
     
                 Parameters:
                 `comp`: Choice between the different configured comps; such as mkw, nsmbw, sm64.
@@ -105,7 +105,7 @@ class ConfigCommands(commands.Cog):
         name="show-comp",
         usage="$show-comp",
         help=("""
-            Display the competition associated with this server.
+            Displays the competition associated with this server.
 
             Parameters:
             None
@@ -134,7 +134,7 @@ class ConfigCommands(commands.Cog):
         description="Configure core roles & channels",
         usage="/config [host_role] [submitter_role] [log_channel] [submission_channel] [seeking_channel] [tasks_channel] [announcements_channel]",
         help=("""
-            Configure core roles & channels. All parameters are optional; you can update them all, ore only those needed. 
+            Configures core roles & channels. All parameters are optional; you can add or update those that are needed. 
 
             Parameters:
             `host_role`: The host role; who is able to use host commands.

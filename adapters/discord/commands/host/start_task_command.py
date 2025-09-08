@@ -63,7 +63,7 @@ class StartTaskCommand(commands.Cog):
         description="[Host] Start a new task",
         usage="/start-task <number> <deadline> [year] [team_size] [speed_task]",
         help=("""
-        Start a new task, and set its behaviour (collab, speed task, deadline)
+        Starts and configures a new task.
         
         Parameters:
             `number`: Task number.

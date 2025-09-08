@@ -38,7 +38,7 @@ class Say(commands.Cog):
         name="say",
         usage = "$say <text_channel> <message>",
         help = ("""
-                Say something through the bot.
+                Sends a message through the bot in a specified channel within the server.
     
                 Parameters:
                 `text_channel`: The text channel in which the message will be sent.

@@ -52,7 +52,7 @@ class DeleteSubmissionCommand(commands.Cog):
         description="[Host] Delete a competitor's (or team) submission.",
         usage="/delete-submission <Member>",
         help=("""
-        Delete a competitor's (or team) submission. This removes their run from the database, and from the submission list.
+        Deletes a submission. This removes it from the database and submission list.
 
         Parameters:
             `Member`: The competitor whose submission will be deleted.

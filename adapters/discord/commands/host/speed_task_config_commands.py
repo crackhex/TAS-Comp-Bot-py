@@ -39,7 +39,7 @@ class SpeedTaskConfigCommands(commands.Cog):
         description="[Host] Set the Speed-Task description text.",
         usage="$speed-task-desc <desc>",
         help=("""
-            Set the task description for a speed task. This must be used before starting the speed task.
+            Sets the description for a speed task. Must be used before using `/start-task`
 
             Parameters:
                 `desc`: The speed task description
@@ -88,10 +88,10 @@ class SpeedTaskConfigCommands(commands.Cog):
         description="[Host] Set the Speed-Task duration (in hours).",
         usage="$speed-task-length <hours>",
         help=("""
-            Set the amount of time player have upon requesting the speed task (or when it's publicly revealed)
+            Sets the amount of time competitors have upon requesting a speed task (and how long before the final deadline it will be publicly revealed).
 
             Parameters:
-                `length`: The speed task length, in hours.
+                `hours`: The speed task length, in hours.
         """),
         with_app_command=True,
     )
@@ -137,7 +137,7 @@ class SpeedTaskConfigCommands(commands.Cog):
         description="[Host] Set 1–4 reminder times (in minutes) before the speed task session ends.",
         usage="$speed-task-reminders <minutes>",
         help=("""
-            Set up to 4 reminders times before the speed task session ends.
+            Sets the times of up to 4 reminders to be sent to competitors who have requested a speed task.
 
             Parameters:
                 `minutes`: The reminders, which happens at X minutes before someone's deadline (or the general deadline).

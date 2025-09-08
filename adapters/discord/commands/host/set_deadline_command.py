@@ -38,7 +38,7 @@ class SetDeadlineCommand(commands.Cog):
         description="[Host] Change the active competition's deadline (UNIX)",
         usage="$/set-deadline <deadline>",
         help=("""
-            Change the deadline of the competition.
+            Changes the task deadline.
 
             Parameters:
                 `deadline`: UNIX timestamp of the new deadline. Use https://www.hammertime.cyou

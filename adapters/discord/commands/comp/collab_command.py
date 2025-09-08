@@ -172,10 +172,10 @@ class CollabCommand(commands.Cog):
         name="collab",
         usage="$collab <member>",
         help=("""
-            Invite one or multiple people to collaborate during a team task!
+            Invites one or more people to form a team during a collab task.
 
             Parameters:
-            `member`: Competitors to invite. You may invite more than one at once, if applicable!
+            `member`: Competitors to invite (ping them, or write their handle). You may invite more than one at once, if applicable! 
     """),
     )
     async def collab(

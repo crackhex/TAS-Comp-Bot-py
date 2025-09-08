@@ -119,10 +119,10 @@ class StopTimerCommand(commands.Cog):
         aliases=["end-timer"],
         usage="$stop-timer [member]",
         help=("""
-            End your speed-task early, or end another competitor’s timer if you are a host.
+            Stops your (or another competitor's) speed task timer early.
 
             Parameters:
-            `member`: [Host-only] Optionally, the member whose timer to end.
+            `member`: [Host-only] Optionally, the competitor whose timer to end.
     """),
     )
     async def stop_timer(
@@ -135,7 +135,7 @@ class StopTimerCommand(commands.Cog):
 
         Behavior:
             - DM + no member: end the caller's own timer.
-            - Guild + member provided: requires host role; ends that member's timer.
+            - Guild + member provided: requires host role; ends that competitor's timer.
 
         Steps:
             0) Resolve the configured guild (for DM, find the one this bot is configured for).

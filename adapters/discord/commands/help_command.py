@@ -21,9 +21,8 @@ class HelpCommand(commands.Cog):
           **fun**     -– Fun commands, such as 8ball
           **host**    -– Host-only commands, for handling tasks.  
           **admin**   -– Admin commands
-          **credits** -– bot credits & version info  
         
-        Write `$help <category>` to view help for a specific category. (Except credits, it has its standalone command.)
+        Write `$help <category>` to view help for a specific category.
         Or write `$help <command>` to view help for a specific command.
     """
 
@@ -35,7 +34,6 @@ class HelpCommand(commands.Cog):
       **requesttask** -- Request the task (sent to your DMs) during a speed task.
       **setteamname** -- Changes your team's name in the submission channel. Only during collab tasks.
       **stop-timer** -- Ends your speed task early.
-      **task-info** -- View information about the current task, such as deadline and host.
       **teams** -- View the list of teams during a collab task.
     """
 
@@ -43,9 +41,7 @@ class HelpCommand(commands.Cog):
     Fun commands 👀\n
     **Commands**:
       **8ball** -- Have a question? Ask the bot for his wisdom!
-      **joke** -- Get a good ol' joke from the bot!
-      **memory** -- Play a memory game! Default board size is 4x4. Be warned: board size 6 and up are way harder due to emoji size.
-      **slots** -- Play the famous slot machine. Default number of emotes is 3. Coins are involved.
+      **slots** -- Play the famous slot machine. Default number of emotes is 3.
     """
 
         self.misc_menu = """**MKWTASCompBot** - A Multi TAS Comp Bot
@@ -74,6 +70,8 @@ class HelpCommand(commands.Cog):
     Admin commands \n
       **config** -- Configure the different roles and channels
       **say** -- Make the bot say something in a channel!
+      **set-comp** -- Associate the discord server with a type of competition (mkw, sm64, etc)
+      **set-file** -- Set the accepted fie extension for submissions.
       **setname** -- Change someone's name for the submission channel.
       **sync** -- Synchronize the bot's slash commands.
       """

@@ -48,7 +48,7 @@ class TeamsCommand(commands.Cog):
         name="teams",
         usage="$teams",
         help=("""
-            List confirmed teams for the active collab competition
+            Lists currently formed teams for a running collab task
 
             Parameters:
             None

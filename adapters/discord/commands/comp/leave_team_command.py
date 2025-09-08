@@ -50,7 +50,7 @@ class LeaveTeamCommand(commands.Cog):
         name="leaveteam",
         usage = "$leaveteam",
         help = ("""
-                Leave your team during a collab task. 
+                Removes you from your team in a collab task.
     
                 Parameters:
                     None

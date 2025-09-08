@@ -139,7 +139,7 @@ class InfoCommand(commands.Cog):
         aliases=["status"],
         usage = "$info",
         help = ("""
-                Show information about your submission, such as time, upload date, status (DQ or not), etc. This is a DM only command.
+                Shows information about your submission, e.g. time, upload date, DQ status, etc. This is a DM only command. 
     
                 Parameters:
                 None.

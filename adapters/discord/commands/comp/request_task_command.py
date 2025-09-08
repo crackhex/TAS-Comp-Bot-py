@@ -52,7 +52,7 @@ class RequestTaskCommand(commands.Cog):
         name="requesttask",
         usage="$requesttask",
         help=("""
-            Request the speed task (if one is ongoing). The task will be sent to you in DMs. Warning: No confirmation.
+            Requests a speed task. If one is ongoing, it will be sent to you in DMs. Warning: No confirmation
 
             Parameters:
             None

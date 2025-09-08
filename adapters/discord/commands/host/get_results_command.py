@@ -37,7 +37,7 @@ class GetResultsCommand(commands.Cog):
         description="[Host] Show ranked results (plus DQs) for the current or last task.",
         usage="$/get-results",
         help=("""
-        Show ranked results, as well as DQs for the latest task. 
+        Shows formatted results for the current task.
 
         Parameters:
             None

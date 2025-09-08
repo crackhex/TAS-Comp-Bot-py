@@ -56,7 +56,7 @@ class HostDissolveCommand(commands.Cog):
         description="[Host] Dissolve a competitor's team, and remove their submission if applicable.",
         usage="$/hostdissolve <member>",
         help=("""
-            Dissolve someone's team during a collab task. This also deletes the team's submission, if applicable. This is usable on anyone in the team.
+            Dissolves a competitor's team in a collab task. Also deletes any existing submission from the team.
 
             Parameters:
                 `member`: The member whose team will be dissolved. 

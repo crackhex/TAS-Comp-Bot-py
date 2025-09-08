@@ -59,7 +59,7 @@ class EditSubmissionCommand(commands.Cog):
         description="[Host] Modify a submission (time and/or DQ status).",
         usage="/edit-submission <member> <new_time> <dq> [dq_reason]",
         help=("""
-            Edit a competitor's submission. This notifies the competitor of the change, aswell as their teammates if in a team.
+            Edits a competitor's submission. Notifies the competitor of the change, as well as their teammates if in a team.
 
             Parameters:
                 `member`: Target competitor whose submission is edited.

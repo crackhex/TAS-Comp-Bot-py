@@ -38,7 +38,7 @@ class SyncCommand(commands.Cog):
         name="sync",
         usage = "$sync",
         help = ("""
-                Synchronization of the bot's slash commands. Usable by bot owner only!
+                Synchronizes the bot's slash commands. Usable by bot owner only!
 
                 Parameters:
                 None

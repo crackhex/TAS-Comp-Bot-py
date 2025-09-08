@@ -28,10 +28,10 @@ class DM(commands.Cog):
         description="[Host] Dm a user",
         usage="/dm <User>",
         help=("""
-            Dm a user. 
+            DMs a user. 
 
             Parameters:
-                `User`: The user to send a message to.
+                `User`: The user to send a message to (ping them, or write their handle).
             """),
         with_app_command=True)
     @host_only()
