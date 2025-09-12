@@ -101,13 +101,6 @@ class SetFileCommand(commands.Cog):
         # 4) Acknowledge
         return await ctx.send(f"✅ Accepted submission file extension set to **.{ext.value}**")
 
-    # --------------------------------------------------------------------- #
-    # Error handling                                                        #
-    # --------------------------------------------------------------------- #
-    @set_file.error
-    async def on_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
-        await ctx.send(f"❌ {error}")
-
 
 # --------------------------------------------------------------------------- #
 # Extension setup                                                             #

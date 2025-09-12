@@ -83,7 +83,7 @@ class DMSubmissionListener(commands.Cog):
             await msg.channel.send("There is no ongoing task!")
             return
 
-        # 2) Retrieve the **accepted extension for this competition
+        # 2) Retrieve the accepted extension for this competition
         #       (set by /set-file). If nothing is configured, submissions are
         #       disabled until an admin sets one.
         gc = await self.cfg_svc.get_guild_config(self.bot.guilds[0].id)

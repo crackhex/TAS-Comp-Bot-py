@@ -5,7 +5,6 @@ import logging
 import os
 import sys
 import traceback
-from typing import Optional
 
 import discord
 from discord.ext import commands
@@ -14,7 +13,6 @@ from dotenv import load_dotenv
 from application.parsers.null_parser import NullParser
 from application.parsers.rkg_parser import RkgParser
 from application.parsers.rksys_parser import RksysParser
-from application.services.submission_services.base_submission_service import BaseSubmissionService
 from application.services.submission_services.service_factory import build_submission_service
 from infrastructure.db import init_db
 from infrastructure.repositories.sqlalchemy_task_repo import SqlAlchemyTaskRepository
@@ -56,7 +54,6 @@ commands_ext = [
     "adapters.discord.commands.comp.stop_timer_command",
     "adapters.discord.commands.comp.teams_command",
     "adapters.discord.commands.fun.8balls_command",
-    "adapters.discord.commands.fun.quote_command",
     "adapters.discord.commands.fun.slots_command",
     "adapters.discord.commands.help_command",
     "adapters.discord.commands.host.delete_submission_command",
@@ -66,14 +63,12 @@ commands_ext = [
     "adapters.discord.commands.host.get_results_command",
     "adapters.discord.commands.host.get_submissions_command",
     "adapters.discord.commands.host.host_dissolve_command",
+    "adapters.discord.commands.host.host_kick_command",
     "adapters.discord.commands.host.set_deadline_command",
     "adapters.discord.commands.host.set_file_command",
     "adapters.discord.commands.host.speed_task_config_commands",
     "adapters.discord.commands.host.start_task_command",
     "adapters.discord.commands.host.submit_command",
-
-
-
 ]
 
 events_ext = [

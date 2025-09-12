@@ -50,7 +50,7 @@ class LeaveTeamCommand(commands.Cog):
         name="leaveteam",
         usage = "$leaveteam",
         help = ("""
-                Removes you from your team in a collab task.
+                Removes you from your team in a collab task. This dissolves your team & deletes your submission if you were in a team with only 1 other person.
     
                 Parameters:
                     None
@@ -97,7 +97,10 @@ class LeaveTeamCommand(commands.Cog):
         # 5) If the team would fall to 1 member, dissolve; else remove only the caller
         if len(team.members) == 2:
             # Remove submission if there is a submission
-            await ctx.bot.submission_service.remove_submission(ctx.author.id)
+            try:
+                await ctx.bot.submission_service.remove_submission(ctx.author.id)
+            except RuntimeError:
+                pass
 
             # Dissolve team
             await self.team_svc.dissolve_team(team.id)

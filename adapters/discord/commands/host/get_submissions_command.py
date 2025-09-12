@@ -174,9 +174,14 @@ class GetSubmissionsCommand(commands.Cog):
 
         # adding the curl command for each file
         for sub in subs:
-            submitter = (sub.submitted_by.display_name).replace(" ", "_")
+            if sub.team:
+                who = "_".join(m.display_name.replace(" ", "_") for m in sub.team.members)
+            else:
+                who = sub.submitted_by.display_name
+
+
             download_lines.append(
-                f'curl -L -o "Task{task.number}{submitter}.{file_ext}" "{sub.file.path}"'
+                f'curl -L -o "Task{task.number}_{who}.{file_ext}" "{sub.file.path}"'
             )
 
 

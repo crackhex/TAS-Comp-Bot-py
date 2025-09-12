@@ -99,6 +99,8 @@ class ErrorHandler(commands.Cog):
                 commands.MissingPermissions,
                 commands.CheckFailure,
                 commands.CommandNotFound,
+                commands.UnexpectedQuoteError,
+                commands.InvalidEndOfQuotedStringError
             ),
         ):
             try:

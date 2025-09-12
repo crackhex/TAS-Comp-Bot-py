@@ -218,7 +218,6 @@ class User:
         handle: str,
         display_name: str,
         id: int | None = None,
-        coins: int = 0,
     ):
         """
         Args:
@@ -226,24 +225,17 @@ class User:
             handle (str): username
             display_name (str): server display name.
             id (int | None): internal DB primary key.
-            coins (int): wallet balance.
         """
         self.id = id
         self.discord_id = discord_id
         self.handle = handle
         self.display_name = display_name
-        self.coins = coins
 
-    def award_coins(self, amount: int) -> None:
-        """
-        Add coins to the user’s balance.
+    def __eq__(self, other):
+        return isinstance(other, User) and self.discord_id == other.discord_id
 
-        Args:
-            amount (int): amount to add.
-
-
-        """
-        self.coins += amount
+    def __hash__(self):
+        return hash(self.discord_id)
 
 
 class Team:
@@ -285,14 +277,29 @@ class Team:
             user (User): user to remove.
 
         Raises:
-            RuntimeError: if attempting to remove the leader or a non-member.
+            RuntimeError: if attempting to remove a non-member.
         """
-        if user == self.leader:
-            raise RuntimeError("Cannot remove the team leader")
-        try:
-            self.members.remove(user)
-        except ValueError:
-            raise RuntimeError(f"{user.display_name} is not in the team")
+        # ── Leader tries to leave ────────────────────────────────
+        if user.discord_id == self.leader.discord_id:
+            if len(self.members) == 1:
+                raise RuntimeError("Cannot remove the last remaining member (dissolve instead)")
+
+            # promote the *next* member to leader
+            for m in self.members:
+                if m.discord_id != user.discord_id:
+                    self.leader = m
+                    break
+            # finally remove the old leader
+            self.members = [m for m in self.members if m.discord_id != user.discord_id]
+            return
+
+        # ── Regular non-leader member ────────────────────────────
+        for m in self.members:
+            if m.discord_id == user.discord_id:
+                self.members.remove(m)
+                return
+
+        raise RuntimeError(f"{user.display_name} is not in the team")
 
 
 

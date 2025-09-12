@@ -59,12 +59,14 @@ class GetResultsCommand(commands.Cog):
             return
 
         ranked = [s for s in submissions if not s.dq]
-        dqed   = [s for s in submissions if s.dq]
+        ranked.sort(key=lambda s: s.time or float("inf"))
 
-        ranked.sort(key=lambda s: s.time or 0.0)
-        dqed  .sort(key=lambda s: s.time or 0.0)
+        dqed = [s for s in submissions if s.dq]
+        dqed.sort(key=lambda s: s.time or 0.0)
 
-        # 3) Build lines with ordinal ranks & tie handling
+        known = [s for s in ranked if s.time and s.time > 0]
+        unknown = [s for s in ranked if not s.time or s.time <= 0]
+
         lines: list[str] = [f"**__Task {task.number} Results__**:\n"]
 
         def display(sub) -> str:
@@ -80,21 +82,17 @@ class GetResultsCommand(commands.Cog):
                 suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
             return f"{n}{suffix}"
 
-        place = 0       # current displayed place (1-based)
-        offset = 1      # how many unique better times so far
+        place = 0       # displayed place
+        offset = 1      # how many runs processed
+
         prev_time = None
-
-        for sub in ranked:
-            if prev_time is None or abs((sub.time or 0) - prev_time) > 1e-6:
+        for sub in known:
+            if prev_time is None or abs(sub.time - prev_time) > 1e-6:
                 place = offset
-            # else: same place as previous because of tie
-            line = f"{ordinal(place)}. {display(sub)} — {secs_to_readable(sub.time)}"
-
-            # bold top 3
+            txt = f"{ordinal(place)}. {display(sub)} — {secs_to_readable(sub.time)}"
             if place <= 3:
-                line = f"**{line}**"
-
-            lines.append(line)
+                txt = f"**{txt}**"
+            lines.append(txt)
 
             prev_time = sub.time
             offset += 1
@@ -104,13 +102,17 @@ class GetResultsCommand(commands.Cog):
             lines.append("")
             for sub in dqed:
                 reason = f" [{sub.dq_reason}]" if sub.dq_reason else ""
-                lines.append(
-                    f"DQ. {display(sub)} — {secs_to_readable(sub.time)}{reason}"
-                )
+                lines.append(f"DQ. {display(sub)} — {secs_to_readable(sub.time)}{reason}")
+
+        # 5) Unknown‐time runs → show at the bottom
+        if unknown:
+            lines.append("")
+            for sub in unknown:
+                lines.append(f"N/A. {display(sub)} — {secs_to_readable(sub.time)}")
 
         content = "\n".join(lines)
 
-        # 5) Split into ≤ 2000-char chunks
+        # 6) Split into ≤ 2000-char chunks
         while content:
             chunk = content[:2000]
             cut   = chunk.rfind("\n")

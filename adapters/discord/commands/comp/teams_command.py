@@ -76,7 +76,7 @@ class TeamsCommand(commands.Cog):
             Sends user-facing errors via ctx.send on validation or service failures.
         """
         # 1) Retrieve active task, and verify if it's a collab task
-        task = await self.task_mgr.get_active_task()
+        task = await self.task_mgr.get_active_task() or await self.task_mgr.get_last_task()
         if not task or task.team_size < 2:
             return await ctx.send("There is not an ongoing collab task!")
 

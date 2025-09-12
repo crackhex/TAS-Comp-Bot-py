@@ -7,12 +7,11 @@ Module path:
 
 Summary:
     Application service for user-related operations, including ensuring user existence,
-    updating display names, and managing coin balances.
+    updating display names
 
 Responsibilities:
     - ensure_user: load or create a User based on Discord ID
     - update_display_name: set a new display name for an existing user
-    - award_coins: increment a user's coin balance
 """
 from typing import List
 
@@ -96,31 +95,6 @@ class UserService:
         await self._user_repo.add(user)
         return user
 
-    async def award_coins(self, discord_id: int, amount: int) -> User:
-        """
-        Award a given number of coins to a user and persist the change.
-
-        Args:
-            discord_id (int): Discord ID of the user.
-            amount (int): Positive amount of coins to award.
-
-        Returns:
-            User: The updated User entity.
-
-        Raises:
-            RuntimeError: If the user does not exist in the repository.
-        """
-        # Load the user from the repository
-        user = await self._user_repo.get_by_discord_id(discord_id)
-        if not user:
-            raise RuntimeError(f"User {discord_id} not found.")
-
-        # Increment the user's coin balance (business logic inside entity)
-        user.award_coins(amount)
-
-        # Persist updated user
-        await self._user_repo.save(user)
-        return user
 
     async def list_users(self) -> List[User]:
         """

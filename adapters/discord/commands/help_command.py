@@ -11,69 +11,73 @@ class HelpCommand(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         # Define your top-level help text here
-        self.help_menu = """**MKWTASCompBot** – A Multi TAS Competition Bot  
-        List of commands
-    
+        self.help_menu = """
         **Categories**:
-          **help**    -– this
-          **comp**    -– Public competition-related commands 
-          **misc**    -– Miscellaneous commands
-          **fun**     -– Fun commands, such as 8ball
-          **host**    -– Host-only commands, for handling tasks.  
-          **admin**   -– Admin commands
+          **help** — this
+          **fun** — Fun commands, such as 8ball
+          **comp** — Public competition-related commands 
+          **host** — Host-only commands, for handling tasks.
+          **admin** — Admin commands
         
         Write `$help <category>` to view help for a specific category.
         Or write `$help <command>` to view help for a specific command.
     """
 
-        self.comp_menu =  """**MKWTASCompBot** - A Multi TAS Comp Bot
-    Competition commands\n
-      **collab** -- Team up with someone during a collab task!
-      **info** -- Shows information about the status of your submission. (DM only)
-      **leaveteam** -- Leave your team during a collab task.
-      **requesttask** -- Request the task (sent to your DMs) during a speed task.
-      **setteamname** -- Changes your team's name in the submission channel. Only during collab tasks.
-      **stop-timer** -- Ends your speed task early.
-      **teams** -- View the list of teams during a collab task.
+        self.comp_menu =  """
+      **info** — Shows information about the status of your submission. (DM only)
+      
+      **collab** — Team up with someone during a collab task!
+      **setteamname** — Changes your team's name during collab tasks.
+      **leaveteam** — Leave your team during a collab task.
+      **teams** — View the list of teams during a collab task.
+
+      **requesttask** — Request the task (sent to your DMs) during a speed task.
+      **stop-timer** — Ends your speed task early.
+      
+-# Use **$help <command>** for detailed usage
     """
 
-        self.fun_menu = """**MKWTASCompBot** - A Multi TAS Comp Bot
-    Fun commands 👀\n
-    **Commands**:
-      **8ball** -- Have a question? Ask the bot for his wisdom!
-      **slots** -- Play the famous slot machine. Default number of emotes is 3.
+        self.fun_menu = """
+      **8ball** — Have a question? Ask the bot for his wisdom!
+      **slots** — Play the famous slot machine. Default number of emotes is 3.
+      
+-# Use **$help <command>** for detailed usage
     """
 
-        self.misc_menu = """**MKWTASCompBot** - A Multi TAS Comp Bot
-    Miscellaneous commands\n
-      **quote** -- Read an inspirational quote!
-    """
-        self.host_menu = """**MKWTASCompBot** - A Multi TAS Comp Bot
-    Host commands :P\n
-      **delete-submission** -- Delete someone's submission. 
-      **/dm** -- Make the bot dm someone!
-      **/edit-submission** -- Edits someone's submission status: time, dq (True/False), dq reason
-      **end-task** -- Ends the current task (Warning: No confirmation). This does not clear submissions.
-      **get-results** -- Prints the results of the current (ended or not) task. Valid and DQ'ed runs
-      **get-submissions** -- Your bread and butter for starting to judge and time runs!
-      **hostdissolve** -- Dissolve a team.
-      **set-deadline** -- Change the deadline. Time in UNIX!
-      **speed-task-desc** -- Set the description of a speed task.
-      **speed-task-length** -- Set the duration competitors have to submit to a speed task.
-      **speed-task-reminders** -- Set the reminders for a speed task. Up to 4 reminders.
-      **stop-timer** -- Ends someone else's speed task early.
-      **/start-task** -- Starts a new task. Warning: this deletes last task's stored submissions, results, and 'Current submission' message.
-      **/submit** -- Submit a file for someone.
+        self.host_menu = """
+      **/dm** — Make the bot dm someone!
+      
+      **/start-task** — Starts a new task. Warning: this resets last task's data.
+      **set-deadline** — Change the deadline. Time in UNIX!
+      **end-task** — Ends the current task (Warning: No confirmation).
+    
+      **/submit** — Submit a file for someone.
+      **/edit-submission** — Edits someone's submission status: time, dq (T/F), dq reason
+      **delete-submission** — Delete someone's submission.
+      **get-submissions** — Your bread and butter for starting to judge and time runs!
+      **get-results** — Prints the results of the current (ended or not) task.
+
+      **hostkick** — Kick a specific user from their team.
+      **hostdissolve** — Dissolve a team.
+      
+      **speed-task-desc** — Set the description of a speed task.
+      **speed-task-length** — Set the time duration of a speed task session.
+      **speed-task-reminders** — Set the reminders for a speed task. Up to 4 reminders.
+      **stop-timer** — Ends someone else's speed task early.
+      
+-# Use **$help <command>** for detailed usage
     """
 
-        self.admin_menu = """**MKWTASCompBot** - A Multi TAS Comp Bot
-    Admin commands \n
-      **config** -- Configure the different roles and channels
-      **say** -- Make the bot say something in a channel!
-      **set-comp** -- Associate the discord server with a type of competition (mkw, sm64, etc)
-      **set-file** -- Set the accepted fie extension for submissions.
-      **setname** -- Change someone's name for the submission channel.
-      **sync** -- Synchronize the bot's slash commands.
+        self.admin_menu = """
+      **say** — Make the bot say something in a channel!
+      **setname** — Change someone's name for the submission channel.
+      
+      **sync** — Synchronize the bot's slash commands.
+      **config** — Configure the different roles and channels
+      **set-comp** — Associate the server with a type of competition (mkw, sm64, etc)
+      **set-file** — Set the accepted fie extension for submissions.
+      
+-# Use **$help <command>** for detailed usage
       """
 
     @commands.command(name="help")
@@ -83,23 +87,42 @@ class HelpCommand(commands.Cog):
         If `topic` matches a category or command name, dispatch there.
         """
         if topic is None:
-            return await ctx.send(self.help_menu)
+            embed = discord.Embed(
+                title=f":book: Help menu",
+                description=self.help_menu,
+                colour=discord.Colour.from_rgb(0, 255, 255)
+            )
 
-        match topic.lower():
-            case "comp":
-                return await ctx.send(self.comp_menu)
-            case "fun":
-                return await ctx.send(self.fun_menu)
-            case "misc":
-                return await ctx.send(self.misc_menu)
-            case "host":
-                return await ctx.send(self.host_menu)
-            case "admin":
-                return await ctx.send(self.admin_menu)
+            # Retrieve guild (to get server icon)
+            guild_list = await ctx.bot.config_service.list_guild_configs()
+            guild_id = guild_list[0].guild_id
+            guild = self.bot.get_guild(guild_id)
 
-            # continue code below
-            case _:
-                pass
+            embed.set_footer(text="MKWTASCompBot - A Multi TAS Comp Bot", icon_url=guild.icon.url if guild.icon else None)
+            return await ctx.send(embed=embed)
+
+        topic = topic.lower()
+        if topic in ("comp", "fun", "host", "admin"):
+            # choose the right text
+            text = {
+                "comp": self.comp_menu,
+                "fun": self.fun_menu,
+                "host": self.host_menu,
+                "admin": self.admin_menu,
+            }[topic]
+
+            embed = discord.Embed(
+                title=f":book: {topic.capitalize()} Commands",
+                description=text,
+                colour=discord.Colour.from_rgb(0, 255, 255)
+            )
+            # Retrieve guild (to get server icon)
+            guild_list = await ctx.bot.config_service.list_guild_configs()
+            guild_id = guild_list[0].guild_id
+            guild = self.bot.get_guild(guild_id)
+
+            embed.set_footer(text="MKWTASCompBot - A Multi TAS Comp Bot", icon_url=guild.icon.url if guild.icon else None)
+            return await ctx.send(embed=embed)
 
         # Try to fetch a command by name
         cmd: commands.Command = self.bot.get_command(topic)
