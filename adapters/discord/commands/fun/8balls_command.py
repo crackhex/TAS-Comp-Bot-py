@@ -76,6 +76,105 @@ class Eightball(commands.Cog):
             "If I had to guess (and I do), it's", "I solemnly swear it's"
         ]
 
+        self.rates = {
+            "very-low": [
+                "This belongs in the dumpster fire museum.",
+                "Are you trolling or...?",
+                "My disappointment is immeasurable and my day has been ruined.",
+                "This is a war crime.",
+                "I lost brain cells looking at this.",
+                "This is a crime against humanity.",
+                "This made my soul leave my body.",
+                "I'm reporting this to the authorities.",
+                "Some things just shouldn't exist.",
+                "A certified flop.",
+                "Please delete this from existence.",
+                "Even my toaster could do better.",
+                "Get outta here!",
+                "My eyes are burning!",
+                "No. Just no.",
+                "Someone help me..."
+            ],
+
+            "low": [
+                "Ewww!",
+                "Yikes.",
+                "This is bad.",
+                "Are you okay?",
+                "Eh... it's giving... disappointment.",
+                "Not the worst, but still bad.",
+                "I don't wanna hear about it again.",
+                "I’ve seen better from a potato.",
+                "I respect the attempt. I don’t like it, but I respect it.",
+                "This could've been great. It wasn't.",
+                "I’ve seen worse... but not by much.",
+                "Not great, not terrible… wait no, it's just bad.",
+                "Was this an accident?",
+                "There's potential, but it's buried deep."
+                "This is like a pizza with no cheese.",
+            ],
+
+            "mid": [
+                "That’s... acceptable.",
+                "It works, I guess.",
+                "You’re not winning any awards, but hey, it exists.",
+                "Middle of the road. Could go either way.",
+                "That’s alright.",
+                "Meh. Mid-tier vibes.",
+                "I’ve seen better. I’ve seen worse.",
+                "Like lukewarm tea. Technically fine.",
+                "Mid. Like bread with no butter.",
+                "That's average Joe territory.",
+                "Not bad, not great, just... ok I guess.",
+                "Solid mid rating. Like lukewarm soup.",
+                "You're doing fine. Ish.",
+                "Neutral like Switzerland.",
+                "This is... fine.",
+                "You know what, sure. It’s fine.",
+                "Could use seasoning."
+            ],
+
+            "good": [
+                "Now we’re talking!",
+                "Certified nice!"
+                "That’s clean!",
+                "You understood the assignment.",
+                "Nice!",
+                "Respectable! Would recommend.",
+                "Yup, that’s a W.",
+                "Not bad at all!",
+                "This is actually impressive.",
+                "Above average, and I’m not just being nice.",
+                "Looking sharp!",
+                "Now *that’s* what I’m talking about.",
+                "Nice work!",
+                "This slaps mildly.",
+                "High-five worthy.",
+                "Pretty solid effort!",
+                "That was cleaner than my conscience.",
+                "I'm impressed!"
+            ],
+
+            "great": [
+                "Absolutely stunning!",
+                "A masterpiece!",
+                "This is peak.",
+                "That’s what dreams are made of.",
+                "Chef’s kiss!",
+                "Perfection. Nothing to add.",
+                "Elite. Top 0.1%.",
+                "You cracked the code, didn’t you?",
+                "Certified GOAT.",
+                "This made me believe in humanity again.",
+                "Legendary. Iconic. Timeless.",
+                "I'm crying. It's beautiful.",
+                "You deserve a trophy. Or five.",
+                "Massive W."
+            ]
+        }
+
+
+
     def pick_yesno(self) -> tuple[str, discord.Color]:
         """
         Randomly choose one of Yes / Neutral / No, weighted 40/20/40,
@@ -131,6 +230,33 @@ class Eightball(commands.Cog):
             affirmation = random.choice(self.affirmation)
             reply = f"{affirmation} **{candidate_name}**."
             color = discord.Color.purple()
+
+        elif first == "rate":
+            random_rate = random.randint(0, 10)
+
+            match random_rate:
+                case 0 | 1:
+                    text = random.choice(self.rates.get("very-low"))
+                    color = discord.Color.dark_red()
+                case 2 | 3:
+                    text = random.choice(self.rates.get("low"))
+                    color = discord.Color.red()
+                case 4 | 5 | 6:
+                    text = random.choice(self.rates.get("mid"))
+                    color = discord.Color.yellow()
+                case 7 | 8:
+                    text = random.choice(self.rates.get("good"))
+                    color = discord.Color.green()
+                case 9 | 10:
+                    text = random.choice(self.rates.get("great"))
+                    color = discord.Color.brand_green()
+                case _:
+                    text = "Idk man!"
+                    color = discord.Color.magenta()
+
+            reply = f"{text} {random_rate}/10"
+
+
 
         # Yes/No category
         else:

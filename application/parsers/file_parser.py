@@ -18,7 +18,7 @@ from typing import Optional
 
 from domain.entities import SubmissionFile
 from .parser_strategy import ParserStrategy
-from .null_parser     import NullParser
+from .null_parser_strategy     import NullParserStrategy
 
 
 class FileParser:
@@ -36,7 +36,7 @@ class FileParser:
             strategy: Concrete parser to start with.  If None, the parser
                       is the null parser.
         """
-        self._strategy: ParserStrategy = strategy or NullParser()
+        self._strategy: ParserStrategy = strategy or NullParserStrategy()
 
     def set_strategy(self, strategy: ParserStrategy) -> None:
         """Replace the current parsing strategy"""

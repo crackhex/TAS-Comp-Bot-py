@@ -42,7 +42,7 @@ class DMSubmissionListener(commands.Cog):
         5. Assigns the "submitted" role (non-speed tasks only).
     """
 
-    bot: commands.Bot  # Will be set in setup()
+    bot: commands.Bot
 
     def __init__(
         self,

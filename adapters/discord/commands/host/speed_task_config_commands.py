@@ -202,7 +202,7 @@ class SpeedTaskConfigCommands(commands.Cog):
         )
 
         list_of_reminders = ", ".join(f"{x}min" for x in m)
-        await ctx.send(f"The speed task reminders have been set! → **{list_of_reminders}**.")
+        return await ctx.send(f"The speed task reminders have been set! → **{list_of_reminders}**.")
 
 
 async def setup(bot: commands.Bot):

@@ -26,9 +26,9 @@ from discord import app_commands, Message
 from discord.ext import commands
 
 from adapters.discord.checks import host_only
-from application.parsers.rkg_parser   import RkgParser
-from application.parsers.rksys_parser import RksysParser
-from application.parsers.null_parser  import NullParser
+from application.parsers.rkg_parser_strategy   import RkgParserStrategy
+from application.parsers.rksys_parser_strategy import RksysParserStrategy
+from application.parsers.null_parser_strategy  import NullParserStrategy
 from application.parsers.parser_strategy import ParserStrategy
 from application.services.config_service import ConfigService
 
@@ -37,8 +37,8 @@ from application.services.config_service import ConfigService
 # This is to be extended by third party comps (sm64, nsmbw, etc)              #
 # --------------------------------------------------------------------------- #
 EXTENSION_STRATEGIES: Dict[str, Type[ParserStrategy]] = {
-    "rkg":   RkgParser,
-    "dat": RksysParser, # rksys.dat
+    "rkg":   RkgParserStrategy,
+    "dat": RksysParserStrategy, # rksys.dat
 }
 
 ALLOWED_CHOICES = [
@@ -95,7 +95,7 @@ class SetFileCommand(commands.Cog):
         )
 
         # 3) Swap the strategy
-        StrategyClass = EXTENSION_STRATEGIES.get(ext.value, NullParser)
+        StrategyClass = EXTENSION_STRATEGIES.get(ext.value, NullParserStrategy)
         ctx.bot.file_parser.set_strategy(StrategyClass())
 
         # 4) Acknowledge

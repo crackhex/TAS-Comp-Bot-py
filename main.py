@@ -10,9 +10,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from application.parsers.null_parser import NullParser
-from application.parsers.rkg_parser import RkgParser
-from application.parsers.rksys_parser import RksysParser
+from application.parsers.null_parser_strategy import NullParserStrategy
+from application.parsers.rkg_parser_strategy import RkgParserStrategy
+from application.parsers.rksys_parser_strategy import RksysParserStrategy
 from application.services.submission_services.service_factory import build_submission_service
 from infrastructure.db import init_db
 from infrastructure.repositories.sqlalchemy_task_repo import SqlAlchemyTaskRepository
@@ -55,6 +55,7 @@ commands_ext = [
     "adapters.discord.commands.comp.teams_command",
     "adapters.discord.commands.fun.8balls_command",
     "adapters.discord.commands.fun.slots_command",
+    "adapters.discord.commands.credits_command",
     "adapters.discord.commands.help_command",
     "adapters.discord.commands.host.delete_submission_command",
     "adapters.discord.commands.host.dm_command",
@@ -146,7 +147,7 @@ async def _bootstrap() -> None:
 
     # 4) Services that depend on parameters
     # Default objects (NullParser + generic submission service)
-    file_parser = FileParser(NullParser())
+    file_parser = FileParser(NullParserStrategy())
     comp_key = None
 
     guild_mappings = await config_service.list_guild_configs()
@@ -155,9 +156,9 @@ async def _bootstrap() -> None:
         ext_cfg = await config_service.get_submission_file_extension(comp_key)
 
         if ext_cfg and ext_cfg.ext == "rkg":
-            file_parser.set_strategy(RkgParser())
+            file_parser.set_strategy(RkgParserStrategy())
         elif ext_cfg and ext_cfg.ext == "rksys":
-            file_parser.set_strategy(RksysParser())
+            file_parser.set_strategy(RksysParserStrategy())
 
         # insert other comps here... (sm64, nsmbw)
 

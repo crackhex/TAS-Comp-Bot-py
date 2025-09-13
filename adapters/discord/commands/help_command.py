@@ -10,7 +10,8 @@ class HelpCommand(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # Define your top-level help text here
+
+        # All the category texts
         self.help_menu = """
         **Categories**:
           **help** — this
@@ -98,7 +99,7 @@ class HelpCommand(commands.Cog):
             guild_id = guild_list[0].guild_id
             guild = self.bot.get_guild(guild_id)
 
-            embed.set_footer(text="MKWTASCompBot - A Multi TAS Comp Bot", icon_url=guild.icon.url if guild.icon else None)
+            embed.set_footer(text="TASCompBot - A Multi TAS Comp Bot", icon_url=guild.icon.url if guild.icon else None)
             return await ctx.send(embed=embed)
 
         topic = topic.lower()
@@ -121,7 +122,7 @@ class HelpCommand(commands.Cog):
             guild_id = guild_list[0].guild_id
             guild = self.bot.get_guild(guild_id)
 
-            embed.set_footer(text="MKWTASCompBot - A Multi TAS Comp Bot", icon_url=guild.icon.url if guild.icon else None)
+            embed.set_footer(text="TASCompBot - A Multi TAS Comp Bot", icon_url=guild.icon.url if guild.icon else None)
             return await ctx.send(embed=embed)
 
         # Try to fetch a command by name
@@ -142,6 +143,7 @@ class HelpCommand(commands.Cog):
             # description / help
             desc = cmd.help or "No description available."
             embed.add_field(name="Description", value=desc, inline=False)
+
             # any aliases?
             if cmd.aliases:
                 embed.add_field(name="Aliases", value=", ".join(cmd.aliases), inline=False)

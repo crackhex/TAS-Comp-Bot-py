@@ -25,10 +25,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-from application.parsers.rkg_parser   import RkgParser
-from application.parsers.rksys_parser import RksysParser
+from application.parsers.rkg_parser_strategy   import RkgParserStrategy
+from application.parsers.rksys_parser_strategy import RksysParserStrategy
 from application.parsers.file_parser  import FileParser
-from application.parsers.null_parser  import NullParser   # safety
+from application.parsers.null_parser_strategy  import NullParserStrategy   # safety
 
 from application.services.submission_services.base_submission_service import BaseSubmissionService
 
@@ -93,7 +93,7 @@ class MKWSubmissionService(BaseSubmissionService):
         # ``FileParser`` should already have the right strategy
         # (because /set-file set it), but we double-check.
         strat = self._parser.strategy
-        if isinstance(strat, NullParser):
+        if isinstance(strat, NullParserStrategy):
             raise RuntimeError(
                 "No parser strategy configured. Use `/set-file` first."
             )
@@ -103,7 +103,7 @@ class MKWSubmissionService(BaseSubmissionService):
             return strat.parse(file_bytes, uploaded_at_epoch)
 
         # Otherwise, fall back to the other parser
-        alt_strat = RkgParser() if isinstance(strat, RksysParser) else RksysParser()
+        alt_strat = RkgParserStrategy() if isinstance(strat, RksysParserStrategy) else RksysParserStrategy()
         if alt_strat.supports(file_bytes):
             # Swap strategy for the rest of the runtime
             self._parser.set_strategy(alt_strat)

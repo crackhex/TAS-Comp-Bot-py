@@ -110,6 +110,9 @@ class StartTaskCommand(commands.Cog):
             None
         """
 
+        # Let discord acknowledge this is a heavy command, and may take a while to load.
+        await ctx.defer()
+
         # 1) Ensure this guild is mapped to a competition
         gc = await self.cfg_svc.get_guild_config(ctx.guild.id)
         if not gc:
