@@ -109,4 +109,4 @@ async def refresh_submission_list(
         except discord.HTTPException:
             pass
 
-    await channel.send(content)
+    await channel.send(content, allowed_mentions=discord.AllowedMentions.none(), suppress_embeds=True)

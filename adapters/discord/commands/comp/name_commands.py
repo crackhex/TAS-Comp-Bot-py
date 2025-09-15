@@ -28,7 +28,8 @@ from application.services.task_manager       import TaskManager
 from application.services.config_service     import ConfigService
 
 MAX_LEN     = 50
-INVALID_PAT = re.compile(r"[@]")
+INVALID_PAT = re.compile(
+    r"@|(?:https?://|www\.)\S+|\*{2,}|\|{2,}|`+|_{2,}|~{2,}", re.IGNORECASE)
 
 
 class NameCommands(commands.Cog):
@@ -55,7 +56,7 @@ class NameCommands(commands.Cog):
 
                 Parameters:
                 `member`: The member whose name to change.
-                `name`: The name. Length must be at most 50 characters, and the name may not contain `@`.
+                `name`: The name. Length must be at most 50 characters, and the name may not contain `@`, links or discord markdown.
         """),
     )
 
@@ -77,7 +78,7 @@ class NameCommands(commands.Cog):
         """
         # 1) Validate input
         if len(new_name) > MAX_LEN or INVALID_PAT.search(new_name):
-            return await ctx.send("Invalid name (max 50 chars, no '@').")
+            return await ctx.send("Invalid name (max 50 chars, no '@', no links, no discord markdown).")
 
         # 2) Update in domain
         try:
@@ -102,7 +103,7 @@ class NameCommands(commands.Cog):
             Changes your team name in a collab task. 
 
             Parameters:
-            `name`: The team name. Length must be at most 50 characters, and the name may not contain `@`.
+            `name`: The team name. Length must be at most 50 characters, and the name may not contain `@`, links or discord markdown.
     """),
     )
     async def set_team_name(
@@ -119,17 +120,17 @@ class NameCommands(commands.Cog):
         """
         # 1) Validate input
         if len(new_team_name) > MAX_LEN or INVALID_PAT.search(new_team_name):
-            return await ctx.send("Invalid team name (max 50 chars, no '@').")
+            return await ctx.send("Invalid team name (max 50 chars, no '@', no links or discord markdown).")
 
         # 2) Must have an active team-based competition
         task = await self.task_mgr.get_active_task()
         if not task:
-            return await ctx.send("There is no active task")
+            return await ctx.send("There is no active task.")
         if task.team_size <= 1:
             return await ctx.send("This task is not a collab task.")
 
         # 3) Resolve the guild (single-guild instance)
-        #    If run from a server, use that guild; otherwise, take the first connected guild.
+        # If run from a server, use that guild; otherwise, take the first connected guild.
         if ctx.guild is not None:
             guild = ctx.guild
         else:
