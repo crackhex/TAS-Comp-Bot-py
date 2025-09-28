@@ -155,7 +155,7 @@ class DMSubmissionListener(commands.Cog):
                     )
 
         # 7) Ack
-        extension = (msg.attachments[0].filename.lower().split("."))[1]
+        extension = (msg.attachments[0].filename.lower().split("."))[-1]
         await msg.channel.send(f"`.{extension}` file detected!\n"
                                             f"The file was successfully saved. Type `$info` for more information "
                                             f"about the file."
