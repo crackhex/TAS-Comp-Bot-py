@@ -1,9 +1,0 @@
-*__pycache__/
-*.rkg
-*.dat
-*.db
-*.pyc
-.env
-/venv
-downloads/*
-aliases.csv
