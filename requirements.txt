@@ -1,0 +1,6 @@
+discord.py~=2.6.3
+python-dotenv==1.1.1
+SQLAlchemy~=2.0.43
+aiohttp~=3.12.14
+aiosqlite~=0.21.0
+pydantic~=2.11.7
