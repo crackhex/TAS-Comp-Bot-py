@@ -66,27 +66,54 @@ class BaseSubmissionService(ABC):
         # 3) Detect / validate team
         team = await self._resolve_team(task, user, team_id)
 
-        # 4) Replace any previous run(s)
-        await self._purge_previous_runs(task, user, team)
+        # 4) Find the existing "authoritative" submission, if any, for this competitor
+        #    - if team exists: check the team's submission row
+        #    - else: check the solo row for this user
+        existing_sub = await self._get_existing_submission(task, user, team)
 
-        # 5) --- game-specific parsing ------------------------------------
+        # 5) Parse the uploaded file into a domain SubmissionFile
         submission_file: SubmissionFile = self.parse_file(file_bytes, now)
 
-        # 6. Build domain entity
-        sub = Submission(
-            submitted_by=user,
-            task=task,
-            file=submission_file,
-            team=team,
-            url=file_url,
-        )
+        if existing_sub:
+            # -------- RESUBMISSION  --------
+            # Reuse the same DB row (same PK), so ordering doesn't move.
+            existing_sub.file = submission_file
+            existing_sub.url = file_url
+            existing_sub.submitted_by = user
+            existing_sub.team = team
 
-        # Add the extra fields (exemple case: character and vehicle for mkwii)
-        self.populate_metadata(sub, submission_file)
+            # Fill in per-game metadata (example, for mkwii, this is character and vehicle)
+            self.populate_metadata(existing_sub, submission_file)
 
-        # 7. Validate + persist
-        sub.validate()
-        await self._sub_repo.add(sub)
+            existing_sub.validate()
+            await self._sub_repo.save(existing_sub)
+            sub = existing_sub
+
+        else:
+            # -------- FIRST SUBMISSION FOR THIS COMPETITOR --------
+            # There's no row yet for this competitor (user or team),
+            # so we create one.
+            sub = Submission(
+                submitted_by=user,
+                task=task,
+                file=submission_file,
+                team=team,
+                url=file_url,
+            )
+
+            # Fill in per-game metadata (example, for mkwii, this is character and vehicle)
+            self.populate_metadata(sub, submission_file)
+
+            sub.validate()
+            await self._sub_repo.add(sub)
+
+        # 6) Enforce exclusivity rules:
+        #    If this is a TEAM submission:
+        #    - This team is now the only valid entry for all its members.
+        #    - Therefore: remove any SOLO submissions for each of the team members.
+        if team:
+            await self._cleanup_member_solo_runs(task, team)
+
         return sub
 
     # ------------------------------------------------------------------ #
@@ -100,7 +127,7 @@ class BaseSubmissionService(ABC):
     def populate_metadata(self,sub: Submission,file: SubmissionFile) -> None: ...
 
     # ------------------------------------------------------------------ #
-    # Helpers (shared across all comps)                                  #
+    # Helpers for this class                                             #
     # ------------------------------------------------------------------ #
     async def _resolve_team(self, task: Task, user, team_id):
         if task.team_size <= 1 or task.speed_task or self._team_repo is None:
@@ -118,17 +145,41 @@ class BaseSubmissionService(ABC):
             raise RuntimeError(f"Team #{team_id} not found.")
         return team
 
-    async def _purge_previous_runs(self, task: Task, user, team):
+    async def _cleanup_member_solo_runs(self, task: Task, team) -> None:
+        """
+        After a team submits, there shouldn't be any standalone 'solo' runs
+        from any of the members left in the DB for this task.
+
+        This guarantees:
+        - If someone used to be 'solo' and is now on a team,
+          their solo submission is invalidated.
+        - The leaderboard won't show both "Player A (solo)" AND "Team XYZ (Player A & ...)".
+        """
+        for member in team.members:
+            await self._sub_repo.remove_user_submissions(task.id, member.discord_id)
+
+    async def _get_existing_submission(
+            self,
+            task: Task,
+            user,
+            team,
+    ) -> Optional[Submission]:
+        """
+        What is the "official" submission row this resubmission should update?
+
+        - If team exists: the team's shared submission row.
+        - Else: the user's solo submission row.
+        """
         if team:
-            await self._sub_repo.remove_team_submissions(task.id, team.id)
-            for m in team.members:
-                await self._sub_repo.remove_user_submissions(task.id, m.discord_id)
+            return await self._sub_repo.get_submission_by_team(task.id, team.id)
         else:
-            await self._sub_repo.remove_user_submissions(task.id, user.discord_id)
+            return await self._sub_repo.get_submission_by_user(task.id, user.discord_id)
+
 
     # ------------------------------------------------------------------ #
     # Other methods (shared across all comps)
     # ------------------------------------------------------------------ #
+
 
     async def remove_submission(self, user_id: int) -> Submission:
         """
@@ -173,6 +224,7 @@ class BaseSubmissionService(ABC):
 
         # 5) Return the deleted entity for command feedback
         return sub
+
 
     async def get_submissions(self) -> list[Submission]:
         """
