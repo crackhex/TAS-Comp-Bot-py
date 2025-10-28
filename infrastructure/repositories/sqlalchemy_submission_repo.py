@@ -61,20 +61,31 @@ class SqlAlchemySubmissionRepository(SubmissionRepository):
             None
         """
         async with self._sf() as sess:
-            # Determine existing record by task + team/user to preserve primary key
-            stmt = select(SubmissionORM).where(
-                SubmissionORM.task_id == sub.task.id,
-                SubmissionORM.team_id == (sub.team.id if sub.team else None),
-                SubmissionORM.user_id == sub.submitted_by.discord_id,
-            )
+            if sub.team:
+                stmt = select(SubmissionORM).where(
+                    SubmissionORM.task_id == sub.task.id,
+                    SubmissionORM.team_id == sub.team.id,
+                )
+            else:
+                stmt = select(SubmissionORM).where(
+                    SubmissionORM.task_id == sub.task.id,
+                    SubmissionORM.user_id == sub.submitted_by.discord_id,
+                )
+
             existing = (await sess.scalars(stmt)).first()
 
             orm = SubmissionORM.from_domain(sub)
             if existing:
-                orm.id = existing.id       # preserve PK for update
-            await sess.merge(orm)          # merge = insert or update
+                # IMPORTANT:
+                # We do NOT want to create a new row and get a new PK,
+                # we want to UPDATE the existing row so ordering is stable.
+                orm.id = existing.id
+
+            await sess.merge(orm)
             await sess.commit()
-            sub.id = orm.id                # propagate assigned ID back to domain
+
+            # Push the PK back to the domain entity
+            sub.id = orm.id
 
     async def save(self, sub: Submission) -> None:
         """
