@@ -12,7 +12,7 @@ Summary:
 Responsibilities:
     - Task: competition with lifecycle methods (open, publish, close)
     - SpeedTaskSession: individual user session for a speed-task
-    - SubmissionFile, RKGFile, RKSysFile: file metadata value objects
+    - SubmissionFile, RKGFile, RKSysFile, ZipFile: file metadata value objects
     - User: Discord user
     - Team: group of users who collaborate in a task
     - Submission: run submission tied to a task, user/team, and file
@@ -202,6 +202,14 @@ class RKSysFile(SubmissionFile):
     Represents a rksys.dat file.
     """
 
+    def __init__(self, path: str, uploaded_at: int):
+        super().__init__(path, uploaded_at)
+        self.run_time = 0.0  # no run time available
+
+class ZipFile(SubmissionFile):
+    """
+    Represents a .zip file.
+    """
     def __init__(self, path: str, uploaded_at: int):
         super().__init__(path, uploaded_at)
         self.run_time = 0.0  # no run time available

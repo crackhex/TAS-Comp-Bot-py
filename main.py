@@ -11,8 +11,10 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from application.parsers.null_parser_strategy import NullParserStrategy
+from application.parsers.registry import new_strategy
 from application.parsers.rkg_parser_strategy import RkgParserStrategy
 from application.parsers.rksys_parser_strategy import RksysParserStrategy
+from application.parsers.zip_parser_strategy import ZipParserStrategy
 from application.services.submission_services.service_factory import build_submission_service
 from infrastructure.db import init_db
 from infrastructure.repositories.sqlalchemy_task_repo import SqlAlchemyTaskRepository
@@ -153,19 +155,17 @@ async def _bootstrap() -> None:
     guild_mappings = await config_service.list_guild_configs()
     if guild_mappings:
         comp_key = guild_mappings[0].comp  # 'mkw', 'sm64', ...
+
+        # Get the parser strategy by getting the current file extension (if set)
         ext_cfg = await config_service.get_submission_file_extension(comp_key)
+        if ext_cfg and ext_cfg.ext:
+            if strat := new_strategy(ext_cfg.ext):
+                file_parser.set_strategy(strat)
 
-        if ext_cfg and ext_cfg.ext == "rkg":
-            file_parser.set_strategy(RkgParserStrategy())
-        elif ext_cfg and ext_cfg.ext == "rksys":
-            file_parser.set_strategy(RksysParserStrategy())
-
-        # insert other comps here... (sm64, nsmbw)
-
-        # else: keep NullParser until /set-file is run
+        # implicit else: keep NullParser until /set-file is run
 
     submission_service = build_submission_service(
-        comp=comp_key,                      # None ⇒ generic/Null service
+        comp=comp_key,
         user_svc=user_service,
         submission_repo=submission_repo,
         task_repo=task_repo,
