@@ -1,34 +1,36 @@
 """
-MKW Wii Submission Service
+MKW Submission Service
 ==========================
 
 Module path:
-    src/application/services/mkw_submission_service.py
+    src/application/services/submission_services/mkw_submission_service.py
 
-Summary
--------
-Domain-specific implementation of ``AbstractSubmissionService`` for the
-**Mario Kart Wii TAS Competition**.
-It understands two file formats:
+Summary:
 
-* ``.rkg``  – single-track ghost file (Time Trials).
-* ``.rksys`` – multi-track system save dump (Grand Prix / TT batch).
+Game-specific implementation of the base submission service for the
+Mario Kart Wii TAS Competition.
+It understands the following file formats:
+
+* .rkg  – single-track ghost file (Time Trials).
+* .rksys – game file, used for ghosts across multiple tracks.
+* .zip - sending multiple files, of different type.
 
 The service chooses the proper parser **at run-time**, based on the single
-“accepted file extension” stored in the guild/competition configuration.
+accepted file extension stored in the guild/competition configuration.
 
-If a user submits multiple times, previous runs are automatically replaced
-according to the base‐class algorithm.
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Dict, Type
 
+from application.parsers.parser_strategy import ParserStrategy
+from application.parsers.registry import candidates_excluding
 from application.parsers.rkg_parser_strategy   import RkgParserStrategy
 from application.parsers.rksys_parser_strategy import RksysParserStrategy
 from application.parsers.file_parser  import FileParser
 from application.parsers.null_parser_strategy  import NullParserStrategy   # safety
+from application.parsers.zip_parser_strategy import ZipParserStrategy
 
 from application.services.submission_services.base_submission_service import BaseSubmissionService
 
@@ -41,6 +43,7 @@ from domain.repositories import (
     SpeedTaskRepository,
 )
 from domain.entities import SubmissionFile, Submission
+
 
 
 class MKWSubmissionService(BaseSubmissionService):
@@ -74,7 +77,7 @@ class MKWSubmissionService(BaseSubmissionService):
             speed_repo=speed_repo
         )
 
-    # ────────────────────────── required hooks ────────────────────────────
+    # ────────────────────────── required methods ────────────────────────────
     # Pick the correct parser & return the parsed value object
     def parse_file(
         self,
@@ -88,9 +91,9 @@ class MKWSubmissionService(BaseSubmissionService):
         Raises
         ------
         ValueError
-            If the bytes do not match either .rkg nor .rksys.
+            If the bytes do not match any of the accepted formats.
         """
-        # ``FileParser`` should already have the right strategy
+        # FileParser should already have the right strategy
         # (because /set-file set it), but we double-check.
         strat = self._parser.strategy
         if isinstance(strat, NullParserStrategy):
@@ -102,12 +105,16 @@ class MKWSubmissionService(BaseSubmissionService):
         if strat.supports(file_bytes):
             return strat.parse(file_bytes, uploaded_at_epoch)
 
-        # Otherwise, fall back to the other parser
-        alt_strat = RkgParserStrategy() if isinstance(strat, RksysParserStrategy) else RksysParserStrategy()
-        if alt_strat.supports(file_bytes):
-            # Swap strategy for the rest of the runtime
-            self._parser.set_strategy(alt_strat)
-            return alt_strat.parse(file_bytes, uploaded_at_epoch)
+
+        # Otherwise, try all other known strategies
+        strat = self._parser.strategy
+        if strat.supports(file_bytes):
+            return strat.parse(file_bytes, uploaded_at_epoch)
+
+        for alt in candidates_excluding(strat):
+            if alt.supports(file_bytes):
+                self._parser.set_strategy(alt)
+                return alt.parse(file_bytes, uploaded_at_epoch)
 
         raise ValueError("Unsupported MKW submission file format")
 
@@ -118,12 +125,12 @@ class MKWSubmissionService(BaseSubmissionService):
         file_obj: SubmissionFile,
     ) -> None:
         """
-        Extract MKW-specific metadata and copy it onto ``submission``.
+        Extract MKW-specific metadata and copy it onto submission.
 
         * run_time → submission.time
         * character / vehicle if available (only on RKG), else None
         """
-        # If rkg, retrieve run_time, else set to 0 if rksys (or time isn't found)
+        # If rkg, retrieve run_time, else set to 0 if not an rkg (or time isn't found)
         if hasattr(file_obj, "run_time"):
             submission.time = file_obj.run_time or 0.0
         else:

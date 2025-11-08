@@ -12,7 +12,7 @@ Summary:
 
     Adding support for a new game requires:
 
-    1. Implementing a concrete XXXSubmissionService that derives fromBaseSubmissionService`.
+    1. Implementing a concrete XXXSubmissionService that derives from BaseSubmissionService.
     2. Importing it here and registering a new key in
         SubmissionServiceFactory – the rest of the bot remains unchanged.
     3. Register the file extension in main, and in entities.

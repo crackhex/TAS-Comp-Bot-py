@@ -26,20 +26,19 @@ from discord import app_commands, Message
 from discord.ext import commands
 
 from adapters.discord.checks import host_only
+from application.parsers.registry import EXTENSION_STRATEGIES
 from application.parsers.rkg_parser_strategy   import RkgParserStrategy
 from application.parsers.rksys_parser_strategy import RksysParserStrategy
 from application.parsers.null_parser_strategy  import NullParserStrategy
 from application.parsers.parser_strategy import ParserStrategy
+from application.parsers.zip_parser_strategy import ZipParserStrategy
 from application.services.config_service import ConfigService
 
 # --------------------------------------------------------------------------- #
 # Map extensions → concrete strategy classes.                                 #
 # This is to be extended by third party comps (sm64, nsmbw, etc)              #
 # --------------------------------------------------------------------------- #
-EXTENSION_STRATEGIES: Dict[str, Type[ParserStrategy]] = {
-    "rkg":   RkgParserStrategy,
-    "dat": RksysParserStrategy, # rksys.dat
-}
+
 
 ALLOWED_CHOICES = [
     app_commands.Choice(name=f".{ext}", value=ext) for ext in EXTENSION_STRATEGIES
