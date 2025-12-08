@@ -11,8 +11,18 @@ Domain-specific implementation of ``AbstractSubmissionService`` for the
 **Mario Kart Wii TAS Competition**.
 It understands two file formats:
 
+<<<<<<< Updated upstream
 * ``.rkg``  – single-track ghost file (Time Trials).
 * ``.rksys`` – multi-track system save dump (Grand Prix / TT batch).
+=======
+Game-specific implementation of the base submission service for the
+Mario Kart Wii TAS Competition.
+It understands the following file formats:
+
+* .rkg  – single-track ghost file (Time Trials).
+* .dat – game file, used for ghosts across multiple tracks.
+* .zip - sending multiple files, of different type.
+>>>>>>> Stashed changes
 
 The service chooses the proper parser **at run-time**, based on the single
 “accepted file extension” stored in the guild/competition configuration.
@@ -25,8 +35,12 @@ from __future__ import annotations
 
 from typing import Optional
 
+<<<<<<< Updated upstream
 from application.parsers.rkg_parser_strategy   import RkgParserStrategy
 from application.parsers.rksys_parser_strategy import RksysParserStrategy
+=======
+from application.parsers.registry import candidates_excluding
+>>>>>>> Stashed changes
 from application.parsers.file_parser  import FileParser
 from application.parsers.null_parser_strategy  import NullParserStrategy   # safety
 

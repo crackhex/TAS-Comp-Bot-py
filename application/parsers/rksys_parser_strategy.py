@@ -10,7 +10,7 @@ Summary:
 
 Responsibilities:
     - Always support any file that starts with the "RKSD" header
-    - Produce an RKSysFile with default run_time=0
+    - Produce an RKSysFile with default run_time=0.0
 """
 
 from domain.entities import RKSysFile
@@ -29,7 +29,7 @@ class RksysParserStrategy(ParserStrategy):
         """
         Return True if the file_bytes start with the ASCII header "RKSD".
         """
-        return file_bytes[:4] != b"RKSD"
+        return file_bytes[:4] == b"RKSD"
 
     def parse(self, file_bytes: bytes, uploaded_at: int) -> RKSysFile:
         """
