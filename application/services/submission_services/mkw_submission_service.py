@@ -12,7 +12,7 @@ Mario Kart Wii TAS Competition.
 It understands the following file formats:
 
 * .rkg  – single-track ghost file (Time Trials).
-* .rksys – game file, used for ghosts across multiple tracks.
+* .dat – game file, used for ghosts across multiple tracks.
 * .zip - sending multiple files, of different type.
 
 The service chooses the proper parser **at run-time**, based on the single
@@ -22,15 +22,11 @@ accepted file extension stored in the guild/competition configuration.
 
 from __future__ import annotations
 
-from typing import Optional, Dict, Type
+from typing import Optional
 
-from application.parsers.parser_strategy import ParserStrategy
 from application.parsers.registry import candidates_excluding
-from application.parsers.rkg_parser_strategy   import RkgParserStrategy
-from application.parsers.rksys_parser_strategy import RksysParserStrategy
 from application.parsers.file_parser  import FileParser
 from application.parsers.null_parser_strategy  import NullParserStrategy   # safety
-from application.parsers.zip_parser_strategy import ZipParserStrategy
 
 from application.services.submission_services.base_submission_service import BaseSubmissionService
 
