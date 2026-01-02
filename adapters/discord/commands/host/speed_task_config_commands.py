@@ -158,7 +158,6 @@ class SpeedTaskConfigCommands(commands.Cog):
             - At least one reminder is required.
             - A maximum of four reminders is allowed.
             - All reminders must be strictly positive integers.
-            - Reminders are stored sorted from largest to smallest.
 
         Steps:
             1) Ensure the guild has a configured competition.

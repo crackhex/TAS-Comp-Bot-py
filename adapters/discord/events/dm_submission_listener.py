@@ -13,7 +13,7 @@ Responsibilities:
     - Validate file type based on general allowed extensions and
       competition-specific settings.
     - Check active competition and speed-task sessions when required.
-    - Delegate the actual submission creation to SubmissionService.
+    - Delegate the actual submission creation to a SubmissionService.
     - Refresh the public submissions list.
     - Assign the "submitted" role to users (except in speed-tasks).
 """
@@ -37,7 +37,7 @@ class DMSubmissionListener(commands.Cog):
     Workflow:
         1. Validates the attachment file type.
         2. Verifies the active competition and any speed-task session.
-        3. Submits the file using SubmissionService.
+        3. Submits the file using a SubmissionService.
         4. Updates the public submissions list.
         5. Assigns the "submitted" role (non-speed tasks only).
     """
@@ -85,7 +85,7 @@ class DMSubmissionListener(commands.Cog):
 
         # 2) Retrieve the accepted extension for this competition
         #       (set by /set-file). If nothing is configured, submissions are
-        #       disabled until an admin sets one.
+        #       disabled until a host sets one.
         gc = await self.cfg_svc.get_guild_config(self.bot.guilds[0].id)
         if not gc:
             await msg.channel.send("This server is not bound to any competition. Ask an admin to use `/set-comp`")
@@ -95,7 +95,7 @@ class DMSubmissionListener(commands.Cog):
         if not ext_cfg:
             await msg.channel.send(
                 "No submission file type configured. "
-                "Ask an admin to use `/set-file` first."
+                "Use `/set-file` first."
             )
             return
 

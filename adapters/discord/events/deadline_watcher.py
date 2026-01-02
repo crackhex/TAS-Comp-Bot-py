@@ -1,5 +1,5 @@
 """
-Deadline Watcher Task
+Deadline Watcher Event
 =====================
 
 Module path:

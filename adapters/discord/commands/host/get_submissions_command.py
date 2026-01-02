@@ -108,7 +108,7 @@ class GetSubmissionsCommand(commands.Cog):
         try:
             subs = await ctx.bot.submission_service.get_submissions()
         except Exception as exc:
-            return await ctx.send(f"Internal error: {exc}")
+            return await ctx.send(f"Error when retrieving results: {exc}")
 
         # 3) If there are no submissions
         if not subs:
@@ -214,6 +214,6 @@ async def setup(bot: commands.Bot) -> None:
     """
     await bot.add_cog(
         GetSubmissionsCommand(
-            task_manager=     bot.task_manager,
+            task_manager = bot.task_manager,
         )
     )

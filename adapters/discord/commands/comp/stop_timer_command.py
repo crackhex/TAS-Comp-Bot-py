@@ -273,8 +273,8 @@ async def setup(bot: commands.Bot):
     """
     await bot.add_cog(
         StopTimerCommand(
-            speed_svc=bot.speed_task_service,
-            task_mgr= bot.task_manager,
-            cfg_svc=  bot.config_service,
+            speed_svc = bot.speed_task_service,
+            task_mgr  = bot.task_manager,
+            cfg_svc   =  bot.config_service,
         )
     )

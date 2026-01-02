@@ -197,7 +197,7 @@ class InfoCommand(commands.Cog):
         embed.add_field(name="Uploaded", value=uploaded, inline=True)
         pad_row(embed)
 
-        # row 2   Character │ Vehicle │
+        # row 2  – Character │ Vehicle │
         embed.add_field(
             name="Character",
             value=MKW_CHARACTERS.get(int(sub.character), f"ID {sub.character}")
@@ -221,8 +221,6 @@ class InfoCommand(commands.Cog):
         )
         pad_row(embed)
 
-        # Gap at the end?
-        #embed.add_field(name="\u200b", value="\u200b")
 
         # Retrieve guild (to get server icon)
         guild_list = await cfg_svc.list_guild_configs()

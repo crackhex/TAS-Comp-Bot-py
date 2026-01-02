@@ -5,5 +5,6 @@
 *.pyc
 .env
 /venv
+/.idea
 downloads/*
 aliases.csv

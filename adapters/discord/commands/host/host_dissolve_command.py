@@ -106,7 +106,7 @@ class HostDissolveCommand(commands.Cog):
             # No submission (solo/team) to remove
             pass
 
-        # 4) Dissolve the team in persistence
+        # 4) Dissolve the team
         await self.team_svc.dissolve_team(team.id)
 
         # 5) Remove the "submitted" role from all former team members, if configured
@@ -138,7 +138,7 @@ async def setup(bot: commands.Bot):
     """
     await bot.add_cog(
         HostDissolveCommand(
-            team_svc=       bot.team_service,
-            config_svc=     bot.config_service,
+            team_svc   =     bot.team_service,
+            config_svc =     bot.config_service,
         )
     )

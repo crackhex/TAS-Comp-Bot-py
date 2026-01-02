@@ -77,13 +77,13 @@ class SetDeadlineCommand(commands.Cog):
         if new_deadline <= now:
             return await ctx.send("The updated deadline must be in the future!")
 
-        # 3) Persist the new deadline via the task manager service
+        # 3) Persist the new deadline via the task manager
         try:
             await self.task_manager.set_deadline(new_deadline)
         except Exception as exc:
             return await ctx.send(f"Couldn't update deadline due to error: {exc}")
 
-        # 4) User-friendly confirmation (Discord renders <t:...:F>)
+        # 4) Confirmation
         return await ctx.send(f"The deadline has been updated! → <t:{new_deadline}:F>.")
 
 

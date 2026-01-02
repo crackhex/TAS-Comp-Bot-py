@@ -1,4 +1,14 @@
-# src/adapters/discord/commands/help_command.py
+"""
+Help command
+===================
+
+Module path:
+    src/adapters/discord/commands/help_command.py
+
+Summary:
+    Provides a help menu with different topics, with the list of commands for that topic.
+"""
+
 
 import discord
 from discord.ext import commands
