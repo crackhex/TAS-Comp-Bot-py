@@ -7,12 +7,10 @@ from discord.ext import commands
 
 class Eightball(commands.Cog):
     """
-    Ask the bot what it thinks about your question!  Supports three categories:
+    Ask the magic 8-ball your question.  Supports three categories:
       • when-questions (“When”) → time-based replies
-      • who-questions  (“Who”) → pick a random user
-      • all others     → classic yes/no/maybe replies
-
-    Keeps your original lists + a few more fun lines.
+      • who-questions  (“Who”)  → pick a random user in the database
+      • all others              → classic yes/no/maybe replies
     """
 
     def __init__(self, bot: commands.Bot) -> None:
@@ -46,7 +44,7 @@ class Eightball(commands.Cog):
         self.yes = [
             'Yes.', 'Yes, surely.', 'It is common knowledge that the answer is yes.',
             'Absolutely!', 'Most likely', 'My sources point to yes.', 'It is certain.',
-            'Without the shadow of a doubt!', 'Outlook good', 'Signs point to yes.',
+            'Without a shadow of a doubt!', 'Outlook good', 'Signs point to yes.',
             'You may rely on it.', 'Count on it!', "Definitely — I’d put money on it.",
             "If it were up to me, yes.", "The universe is nodding in agreement.",
             "Green light. Go!"
@@ -194,7 +192,7 @@ class Eightball(commands.Cog):
             Ask the magic 8ball for his wisdom.
 
             Parameters:
-            `question`: The question. It must be a yes/no, when or who type of question.
+            `question`: The question. It must be a yes/no, when, or who type of question. It can also rate stuff!.
     """),
     )
     async def eightball(self, ctx: commands.Context, *, question: str):

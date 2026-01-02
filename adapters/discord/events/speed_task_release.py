@@ -1,5 +1,5 @@
 """
-Speed‑Task Release Task
+Speed‑Task Release Event
 =======================
 
 Module path:
@@ -118,7 +118,7 @@ class SpeedTaskReleaseCog(commands.Cog):
             # too late for this tick;
             return
 
-        # 5) Mark as released (persist in storage)
+        # 5) Mark as released (persist in DB)
         await self.task_mgr.release_speed_task(comp)
 
         # 6) Announce in the configured task channel of the server
@@ -133,7 +133,7 @@ class SpeedTaskReleaseCog(commands.Cog):
                     f"You have until <t:{task.deadline}:f> (<t:{task.deadline}:R>) to submit!"
                 )
 
-        # – announcements channel: ping and link to #tasks
+        # – announcements channel: Link to #tasks
         ann_cfg = await self.cfg_svc.get_announcements_channel(comp)
         if ann_cfg and ann_cfg.channel_id:
             ch_ann = guild.get_channel(ann_cfg.channel_id)
@@ -144,7 +144,7 @@ class SpeedTaskReleaseCog(commands.Cog):
                     else f"<#{tasks_cfg.channel_id if tasks_cfg else ''}>"
                 )
                 await ch_ann.send(
-                    "@everyone The speed task is now public! "
+                    "The speed task is now public! "
                     f"Head over to {mention} for details."
                 )
 

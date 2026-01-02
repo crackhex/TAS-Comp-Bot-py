@@ -91,7 +91,7 @@ class DeleteSubmissionCommand(commands.Cog):
         if not gc:
             return await ctx.send("There is no competition configured for this server. Use `/set-comp`.")
 
-        # 2) Resolve active or last task (needed for user-facing messaging)
+        # 2) Resolve active or last task
         task = await self.task_mgr.get_active_task()
         if not task:
             task = await self.task_mgr.get_last_task()

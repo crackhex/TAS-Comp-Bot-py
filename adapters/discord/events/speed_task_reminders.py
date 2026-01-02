@@ -1,12 +1,12 @@
 """
-Speed-Task Reminder Task
+Speed-Task Reminder Event
 ========================
 
 Module path:
     src/adapters/discord/events/speed_task_reminder.py
 
 Summary:
-    Minute-aligned background task that:
+    Minute-aligned background event that:
       1) Sends DM reminders to users with active personal speed-task sessions,
          using a small ±LEEWAY second window at the top of each minute.
       2) Expires personal sessions at their deadline (within ±LEEWAY) and assigns
@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 LEEWAY = 3  # seconds of tolerance for reminders and expiration
 
 
-def _format_minutes_en(minutes: int) -> str:
+def _format_minutes(minutes: int) -> str:
     """
     Human-readable formatter for minute counts.
 
@@ -71,7 +71,7 @@ def _format_minutes_en(minutes: int) -> str:
 
 class SpeedTaskReminderCog(commands.Cog):
     """
-    Sends DM and public reminders for speed-tasks in a single-guild deployment.
+    Sends DM and public reminders for speed-tasks.
 
     The loop runs every 60 seconds (aligned to :00) and:
       - DMs users N minutes before their personal deadline (N ∈ reminders),
@@ -161,7 +161,7 @@ class SpeedTaskReminderCog(commands.Cog):
             for r in reminders:
                 target = r * 60
                 if target - LEEWAY <= left_sec <= target:
-                    human = _format_minutes_en(r)
+                    human = _format_minutes(r)
                     user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
                     try:
                         await user.send(f"You have **{human}** left to submit!")
@@ -197,7 +197,7 @@ class SpeedTaskReminderCog(commands.Cog):
             for r in reminders:
                 target = r * 60
                 if target - LEEWAY <= left_sec_global <= target:
-                    human = _format_minutes_en(r)
+                    human = _format_minutes(r)
                     ann = await self.cfg_svc.get_announcements_channel(comp)
                     if not ann or not ann.channel_id:
                         continue

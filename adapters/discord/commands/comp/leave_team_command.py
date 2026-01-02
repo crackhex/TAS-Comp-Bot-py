@@ -112,17 +112,17 @@ class LeaveTeamCommand(commands.Cog):
 
         # 6) Refresh the public submissions list
         return await refresh_submission_list(
-            bot=    ctx.bot,
-            cfg_svc=self.cfg_svc,
-            guild=  ctx.guild,
+            bot     = ctx.bot,
+            cfg_svc = self.cfg_svc,
+            guild   = ctx.guild,
         )
 
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(
         LeaveTeamCommand(
-            team_svc=       bot.team_service,
-            task_mgr=       bot.task_manager,
-            config_svc=     bot.config_service,
+            team_svc   = bot.team_service,
+            task_mgr   = bot.task_manager,
+            config_svc = bot.config_service,
         )
     )

@@ -1,5 +1,14 @@
-# src/adapters/discord/commands/credits_command.py
+"""
+Credits command
+===================
 
+Module path:
+    src/adapters/discord/commands/credits_command.py
+
+Summary:
+    Display the list of contributors to the TAS Comp Bot project.
+
+"""
 import discord
 from discord.ext import commands
 

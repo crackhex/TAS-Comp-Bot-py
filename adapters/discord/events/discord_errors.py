@@ -1,4 +1,3 @@
-# src/adapters/discord/events/discord_errors.py
 """
 Discord Command & Event Error Logger
 ====================================
@@ -34,13 +33,13 @@ from application.services.config_service import ConfigService
 log = logging.getLogger(__name__)
 
 # Embed field hard limit is 1024 chars; keep headroom for code fences
-_TB_SNIPPET_MAX = 900  # characters inside the code block
-_CODE_FENCE_OPEN = "```py\n"
+_TB_SNIPPET_MAX   = 900  # characters inside the code block
+_CODE_FENCE_OPEN  = "```py\n"
 _CODE_FENCE_CLOSE = "```"
 
 
 def _unwrap_error(exc: BaseException) -> BaseException:
-    """Return the deepest/original exception if available (e.g., HybridCommandError.original)."""
+    """Return the deepest/original exception if available."""
     original = getattr(exc, "original", None)
     return original or exc
 

@@ -56,7 +56,7 @@ class FileParser:
         if not self._strategy.supports(file_bytes):
             raise RuntimeError(
                 f"{self._strategy.__class__.__name__} does not support this file type. "
-                "An administrator may need to run `/set-file`."
+                "You may need to run `/set-file`."
             )
         return self._strategy.parse(file_bytes, uploaded_at_epoch)
 

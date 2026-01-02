@@ -89,6 +89,6 @@ async def setup(bot: commands.Bot):
     Args:
         bot (commands.Bot): The Discord bot instance.
     """
-    cog = DMLogger(config_service=bot.config_service)
+    cog = DMLogger(config_service = bot.config_service)
     cog.bot = bot  # type: ignore
     await bot.add_cog(cog)

@@ -117,7 +117,7 @@ class EditSubmissionCommand(commands.Cog):
         if dq and not dq_reason:
             return await ctx.send("Please specify a DQ reason!")
 
-        # 4) Capture the current submission (for summary) by scanning known subs
+        # 4) Capture the current submission (for summary) by scanning submission table
         old_sub = None
         try:
             all_subs = await ctx.bot.submission_service.get_submissions()

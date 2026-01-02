@@ -8,14 +8,13 @@ Module path
 
 Summary:
     Host-only hybrid command that chooses one file extension (and therefore one
-    parsing strategy) to accept for all submissions of the current competition
-    (“comp”).
+    parsing strategy) to accept for all submissions of the current competition.
 
 
 Responsibilities:
     - Ensure the guild is already mapped to a competition with `/set-comp`.
     - Persist the new extension in the configuration tables.
-    - Swap the  parsing strategy
+    - Swap the parsing strategy
 """
 
 from __future__ import annotations
@@ -79,7 +78,7 @@ class SetFileCommand(commands.Cog):
         ctx :
             Invocation context
         ext :
-            One of the allowed extensions (“rkg”, “rksys”, ...)
+            One of the allowed extensions ("rkg", "dat", "zip", etc)
         """
         # 1) Make sure this guild is mapped to a competition
         gc = await self.cfg_svc.get_guild_config(ctx.guild.id)
@@ -88,9 +87,9 @@ class SetFileCommand(commands.Cog):
 
         # 2) Persist in the configuration layer
         await self.cfg_svc.set_submission_file_extension(
-            comp=gc.comp,
-            ext=ext.value,
-            guild_id=ctx.guild.id,
+            comp     = gc.comp,
+            ext      = ext.value,
+            guild_id = ctx.guild.id,
         )
 
         # 3) Swap the strategy

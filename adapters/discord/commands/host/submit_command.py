@@ -127,9 +127,9 @@ class SubmitCommand(commands.Cog):
 
         # 5) Refresh the public submission list
         await refresh_submission_list(
-            bot=    ctx.bot,
-            cfg_svc=self.cfg_svc,
-            guild=  ctx.guild,
+            bot     = ctx.bot,
+            cfg_svc = self.cfg_svc,
+            guild   = ctx.guild,
         )
 
         # 6) Assign the submitter role (team: all members; solo: just the user)
@@ -145,7 +145,7 @@ class SubmitCommand(commands.Cog):
                 # Solo submission → grant to the member only
                 await add_role_to_member(ctx.guild, member.id, submit_cfg.role_id)
 
-        # 7) Confirmation message with formatted time and URL
+        # 7) Confirmation message
         return await ctx.send(f"Succesfully submitted for {member.mention}.")
 
 
