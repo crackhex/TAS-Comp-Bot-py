@@ -18,6 +18,7 @@ import struct
 from typing import List
 from domain.entities import RKGFile
 from .parser_strategy import ParserStrategy
+from crccheck.crc import Crc32IsoHdlc
 
 
 def get_lap_times(rkg: bytearray) -> List[str]:
@@ -116,7 +117,11 @@ class RkgParserStrategy(ParserStrategy):
         """
         Return True if the file_bytes start with the ASCII header "RKGD".
         """
-        return file_bytes[:4] == b"RKGD"
+
+        our_crc = Crc32IsoHdlc.calc(file_bytes[0:-4])
+        rkg_crc = int.from_bytes(file_bytes[-4:])
+
+        return (file_bytes[:4] == b"RKGD") and (rkg_crc == our_crc)
 
     def parse(self, file_bytes: bytes, uploaded_at: int) -> RKGFile:
         """
