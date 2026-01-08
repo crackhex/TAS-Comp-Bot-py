@@ -112,7 +112,7 @@ class MKWSubmissionService(BaseSubmissionService):
                 self._parser.set_strategy(alt)
                 return alt.parse(file_bytes, uploaded_at_epoch)
 
-        raise ValueError("Unsupported MKW submission file format")
+        raise ValueError("Unsupported MKW submission file format (or a fake file was sent).")
 
     # Copy metadata from the parsed file to the Submission entity
     def populate_metadata(
