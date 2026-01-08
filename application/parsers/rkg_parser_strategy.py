@@ -109,7 +109,7 @@ class RkgParserStrategy(ParserStrategy):
     """
     Concrete ParserStrategy for RKG files.
 
-    supports(): checks for the "RKGD" magic header.
+    supports(): checks for the "RKGD" magic header and does a CRC check.
     parse(): extracts lap times, character, vehicle, and run time.
     """
 
