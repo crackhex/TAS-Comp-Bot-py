@@ -28,7 +28,7 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, FunnySettingOneConfig,
 )
 
 # ────────────────────────────────────────────────────────────
@@ -512,4 +512,20 @@ class SubmissionFileConfigORM(Base):
 
     def to_domain(self) -> SubmissionFileConfig:
         return SubmissionFileConfig(comp=self.comp, ext=self.ext, guild_id=self.guild_id)
+
+class FunnySettingOneORM(Base):
+    __tablename__ = "speedtask_extra_setting"
+
+    id       = Column(Integer, primary_key=True, autoincrement=True)
+    comp     = Column("comp",     String,  nullable=False, unique=True)
+    enabled  = Column("enabled",  Boolean,  nullable=False)
+    guild_id = Column("guild_id", Integer, nullable=False)
+
+    @classmethod
+    def from_domain(cls, cfg: FunnySettingOneConfig) -> "FunnySettingOneORM":
+        return cls(comp=cfg.comp, enabled=cfg.enabled, guild_id=cfg.guild_id)
+
+    def to_domain(self) -> FunnySettingOneConfig:
+        return FunnySettingOneConfig(comp=self.comp, enabled=self.enabled, guild_id=self.guild_id)
+
 

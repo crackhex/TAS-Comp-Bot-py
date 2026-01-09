@@ -22,6 +22,7 @@ Responsibilities:
     - get_speed_task_reminders / set_speed_task_reminders
     - get_reminder_pings / set_reminder_pings
     - get_guild_config / set_guild_config
+    - etc
 """
 
 from typing import Optional
@@ -29,9 +30,11 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, FunnySettingOneConfig,
 )
 from domain.repositories import ConfigRepository
+from infrastructure.orm.orm_models import FunnySettingOneORM
+
 
 class ConfigService:
     def __init__(self, config_repo: ConfigRepository):
@@ -161,3 +164,11 @@ class ConfigService:
     async def set_submission_file_extension(self, comp: str, ext: str, guild_id: int) -> None:
         cfg = SubmissionFileConfig(comp=comp, ext=ext.lower(), guild_id=guild_id)
         await self._repo.save_submission_file_extension(cfg)
+
+    # ── FunnySettingOne ──
+    async def get_funny_setting_one(self, comp: str) -> Optional[SubmissionFileConfig]:
+        return await self._repo.get_funny_setting_one(comp)
+
+    async def set_funny_setting_one(self, comp: str, enabled: bool, guild_id: int) -> None:
+        cfg = FunnySettingOneConfig(comp=comp, enabled=enabled, guild_id=guild_id)
+        await self._repo.save_funny_setting_one(cfg)

@@ -63,6 +63,7 @@ commands_ext = [
     "adapters.discord.commands.host.dm_command",
     "adapters.discord.commands.host.edit_submission_command",
     "adapters.discord.commands.host.end_task_command",
+    "adapters.discord.commands.host.funny_setting_command",
     "adapters.discord.commands.host.get_results_command",
     "adapters.discord.commands.host.get_submissions_command",
     "adapters.discord.commands.host.host_dissolve_command",

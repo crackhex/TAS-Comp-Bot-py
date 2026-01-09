@@ -22,6 +22,7 @@ Responsibilities:
         * ReminderPings
         * GuildConfig
         * SubmissionChannel
+        * etc
 """
 
 from typing import Optional, List
@@ -32,13 +33,14 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, FunnySettingOneConfig,
 )
 from infrastructure.orm.orm_models import (
     LogChannelORM, HostRoleORM, SubmitterRoleORM,
     SeekingChannelORM, TasksChannelORM, AnnouncementsChannelORM,
     SpeedTaskLengthORM, SpeedTaskDescORM,
     SpeedTaskRemindersORM, ReminderPingsORM, GuildConfigORM, SubmissionChannelORM, SubmissionFileConfigORM,
+    FunnySettingOneORM,
 )
 
 
@@ -320,4 +322,24 @@ class SqlAlchemyConfigRepository(ConfigRepository):
                 row.guild_id = cfg.guild_id
             else:
                 sess.add(SubmissionFileConfigORM.from_domain(cfg))
+            await sess.commit()
+
+
+    async def get_funny_setting_one(self, comp: str) -> Optional[FunnySettingOneConfig]:
+        async with self._sf() as sess:
+            row = (await sess.scalars(
+                select(FunnySettingOneORM).where(FunnySettingOneORM.comp == comp)
+            )).first()
+            return row.to_domain() if row else None
+
+    async def save_funny_setting_one(self, cfg: FunnySettingOneConfig) -> None:
+        async with self._sf() as sess:
+            row = (await sess.scalars(
+                select(FunnySettingOneORM).where(FunnySettingOneORM.comp == cfg.comp)
+            )).first()
+            if row:
+                row.enabled = cfg.enabled
+                row.guild_id = cfg.guild_id
+            else:
+                sess.add(FunnySettingOneORM.from_domain(cfg))
             await sess.commit()

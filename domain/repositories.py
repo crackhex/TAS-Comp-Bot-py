@@ -17,7 +17,7 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, FunnySettingOneConfig,
 )
 
 class TaskRepository(Protocol):
@@ -122,5 +122,9 @@ class ConfigRepository(Protocol):
     # FileExtension
     async def get_submission_file_extension(self, comp: str) -> Optional[SubmissionFileConfig]: ...
     async def save_submission_file_extension(self, cfg: SubmissionFileConfig) -> None: ...
+
+    # FunnySettingOne
+    async def get_funny_setting_one(self, comp: str) -> Optional[FunnySettingOneConfig]: ...
+    async def save_funny_setting_one(self, cfg: FunnySettingOneConfig) -> None: ...
 
 
