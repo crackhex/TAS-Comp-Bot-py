@@ -28,9 +28,9 @@ import logging
 import discord
 from discord.ext import tasks, commands
 
-from application.services.task_manager        import TaskManager
-from application.services.speed_task_service  import SpeedTaskService
-from application.services.config_service      import ConfigService
+from application.services.task_manager import TaskManager
+from application.services.speed_task_service import SpeedTaskService
+from application.services.config_service import ConfigService
 
 log = logging.getLogger(__name__)
 LEEWAY = 3  # seconds of tolerance after the exact release point
@@ -51,11 +51,11 @@ class SpeedTaskReleaseCog(commands.Cog):
     """
 
     def __init__(
-        self,
-        bot:       commands.Bot,
-        task_mgr:  TaskManager,
-        speed_svc: SpeedTaskService,
-        cfg_svc:   ConfigService,
+            self,
+            bot: commands.Bot,
+            task_mgr: TaskManager,
+            speed_svc: SpeedTaskService,
+            cfg_svc: ConfigService,
     ):
         """
         Initialize the cog and start the periodic release loop.
@@ -66,10 +66,10 @@ class SpeedTaskReleaseCog(commands.Cog):
             speed_svc (SpeedTaskService): Access to speed‑task data/services.
             cfg_svc (ConfigService): Access to guild/competition configuration.
         """
-        self.bot       = bot
-        self.task_mgr  = task_mgr
+        self.bot = bot
+        self.task_mgr = task_mgr
         self.speed_svc = speed_svc
-        self.cfg_svc   = cfg_svc
+        self.cfg_svc = cfg_svc
         self.release_loop.start()
 
     def cog_unload(self):
@@ -89,12 +89,7 @@ class SpeedTaskReleaseCog(commands.Cog):
         """
         now = int(time.time())
 
-        # 1) Is there an active not released speed task
-        task = await self.task_mgr.get_active_task()
-        if not task or not task.speed_task or task.is_released:
-            return
-
-        # 2) Resolve the guild and competition identifier (comp)
+        # 1) Resolve the guild and competition identifier (comp)
         if not self.bot.guilds:
             return  # no guild connected
         guild = self.bot.guilds[0]
@@ -104,11 +99,20 @@ class SpeedTaskReleaseCog(commands.Cog):
             return
         comp = gc.comp
 
+        # 2) Is there an active not released speed task (with extra setting disabled)
+        task = await self.task_mgr.get_active_task()
+
+        extra_setting = await self.cfg_svc.get_extra_setting(comp)
+        extra_enabled = extra_setting is not None and extra_setting.enabled
+
+        if not task or not task.speed_task or task.is_released or extra_enabled:
+            return
+
         # 3) Load duration (speed-task length) to compute release time
         length_cfg = await self.cfg_svc.get_speed_task_length(comp)
         if not length_cfg:
             return
-        length_sec    = int(length_cfg.time * 3600)
+        length_sec = int(length_cfg.time * 3600)
         release_epoch = task.deadline - length_sec
 
         # 4) Fire only within the tolerance window [release_epoch, release_epoch + LEEWAY]
@@ -127,7 +131,7 @@ class SpeedTaskReleaseCog(commands.Cog):
             ch_tasks = guild.get_channel(tasks_cfg.channel_id)
             if isinstance(ch_tasks, discord.TextChannel):
                 desc_cfg = await self.cfg_svc.get_speed_task_desc(comp)
-                desc     = desc_cfg.desc if desc_cfg else "No description provided."
+                desc = desc_cfg.desc if desc_cfg else "No description provided."
                 await ch_tasks.send(
                     f"{desc}\n\n"
                     f"You have until <t:{task.deadline}:f> (<t:{task.deadline}:R>) to submit!"
@@ -169,9 +173,9 @@ async def setup(bot: commands.Bot):
     """
     await bot.add_cog(
         SpeedTaskReleaseCog(
-            bot=       bot,
-            task_mgr=  bot.task_manager,
-            speed_svc= bot.speed_task_service,
-            cfg_svc=   bot.config_service,
+            bot=bot,
+            task_mgr=bot.task_manager,
+            speed_svc=bot.speed_task_service,
+            cfg_svc=bot.config_service,
         )
     )

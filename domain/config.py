@@ -122,9 +122,11 @@ class SubmissionFileConfig:
     guild_id: int
 
 @dataclass
-class FunnySettingOneConfig:
+class ExtraSettingConfig:
     comp: str
     enabled: bool
+    lower_bound: int
+    upper_bound: int
     guild_id: int
 
 

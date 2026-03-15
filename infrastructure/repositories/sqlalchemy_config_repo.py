@@ -33,14 +33,14 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, FunnySettingOneConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, ExtraSettingConfig,
 )
 from infrastructure.orm.orm_models import (
     LogChannelORM, HostRoleORM, SubmitterRoleORM,
     SeekingChannelORM, TasksChannelORM, AnnouncementsChannelORM,
     SpeedTaskLengthORM, SpeedTaskDescORM,
     SpeedTaskRemindersORM, ReminderPingsORM, GuildConfigORM, SubmissionChannelORM, SubmissionFileConfigORM,
-    FunnySettingOneORM,
+    ExtraSettingORM,
 )
 
 
@@ -325,21 +325,23 @@ class SqlAlchemyConfigRepository(ConfigRepository):
             await sess.commit()
 
 
-    async def get_funny_setting_one(self, comp: str) -> Optional[FunnySettingOneConfig]:
+    async def get_extra_setting(self, comp: str) -> Optional[ExtraSettingConfig]:
         async with self._sf() as sess:
             row = (await sess.scalars(
-                select(FunnySettingOneORM).where(FunnySettingOneORM.comp == comp)
+                select(ExtraSettingORM).where(ExtraSettingORM.comp == comp)
             )).first()
             return row.to_domain() if row else None
 
-    async def save_funny_setting_one(self, cfg: FunnySettingOneConfig) -> None:
+    async def save_extra_setting(self, cfg: ExtraSettingConfig) -> None:
         async with self._sf() as sess:
             row = (await sess.scalars(
-                select(FunnySettingOneORM).where(FunnySettingOneORM.comp == cfg.comp)
+                select(ExtraSettingORM).where(ExtraSettingORM.comp == cfg.comp)
             )).first()
             if row:
                 row.enabled = cfg.enabled
+                row.lower_bound = cfg.lower_bound
+                row.upper_bound = cfg.upper_bound
                 row.guild_id = cfg.guild_id
             else:
-                sess.add(FunnySettingOneORM.from_domain(cfg))
+                sess.add(ExtraSettingORM.from_domain(cfg))
             await sess.commit()

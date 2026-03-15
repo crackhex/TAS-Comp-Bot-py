@@ -30,10 +30,9 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, FunnySettingOneConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, ExtraSettingConfig,
 )
 from domain.repositories import ConfigRepository
-from infrastructure.orm.orm_models import FunnySettingOneORM
 
 
 class ConfigService:
@@ -165,10 +164,11 @@ class ConfigService:
         cfg = SubmissionFileConfig(comp=comp, ext=ext.lower(), guild_id=guild_id)
         await self._repo.save_submission_file_extension(cfg)
 
-    # ── FunnySettingOne ──
-    async def get_funny_setting_one(self, comp: str) -> Optional[SubmissionFileConfig]:
-        return await self._repo.get_funny_setting_one(comp)
+    # ── ExtraSetting ──
+    async def get_extra_setting(self, comp: str) -> Optional[ExtraSettingConfig]:
+        return await self._repo.get_extra_setting(comp)
 
-    async def set_funny_setting_one(self, comp: str, enabled: bool, guild_id: int) -> None:
-        cfg = FunnySettingOneConfig(comp=comp, enabled=enabled, guild_id=guild_id)
-        await self._repo.save_funny_setting_one(cfg)
+    async def set_extra_setting(self, comp: str, enabled: bool, lower_bound: int, upper_bound: int, guild_id: int) -> None:
+        cfg = ExtraSettingConfig(comp=comp, enabled=enabled, lower_bound=lower_bound, upper_bound=upper_bound,
+                                 guild_id=guild_id)
+        await self._repo.save_extra_setting(cfg)

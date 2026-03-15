@@ -110,12 +110,24 @@ class DMSubmissionListener(commands.Cog):
         # 3) Speed-task session verifications
         if task.speed_task:
             session = await self.speed_svc.get_session_for_user(msg.author.id)
-            if not session:
-                await msg.channel.send("You may not submit to this speed task as of now! Use `$requesttask` first.")
-                return
-            if not session.is_active():
-                await msg.channel.send("Your speed task is already over! You cannot submit.")
-                return
+
+            if not task.is_released:
+                # Not released phase: must have an active session
+                if not session:
+                    await msg.channel.send("You may not submit to this speed task as of now! Use `$requesttask` first.")
+                    return
+                if not session.is_active():
+                    await msg.channel.send("Your speed task is already over! You cannot submit.")
+                    return
+            else:
+                # Released phase:
+                # - No session => allowed (they never requested)
+                # - Session active => allowed
+                # - Session expired => denied
+                if session and not session.is_active():
+                    await msg.channel.send("Your speed task is already over! You cannot submit.")
+                    return
+
 
         # 4) Fetch file bytes & hand over to SubmissionService
         file_bytes = await msg.attachments[0].read()
