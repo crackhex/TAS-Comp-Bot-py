@@ -28,7 +28,7 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, ExtraSettingConfig,
 )
 
 # ────────────────────────────────────────────────────────────
@@ -512,4 +512,24 @@ class SubmissionFileConfigORM(Base):
 
     def to_domain(self) -> SubmissionFileConfig:
         return SubmissionFileConfig(comp=self.comp, ext=self.ext, guild_id=self.guild_id)
+
+class ExtraSettingORM(Base):
+    __tablename__ = "extra_setting"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    comp        = Column("comp",     String,  nullable=False, unique=True)
+    enabled     = Column("enabled",  Boolean,  nullable=False)
+    lower_bound = Column("lower_bound", Integer, nullable=False)
+    upper_bound = Column("upper_bound", Integer, nullable=False)
+    guild_id    = Column("guild_id", Integer, nullable=False)
+
+    @classmethod
+    def from_domain(cls, cfg: ExtraSettingConfig) -> "ExtraSettingORM":
+        return cls(comp=cfg.comp, enabled=cfg.enabled, lower_bound = cfg.lower_bound, upper_bound = cfg.upper_bound,
+                   guild_id=cfg.guild_id)
+
+    def to_domain(self) -> ExtraSettingConfig:
+        return ExtraSettingConfig(comp=self.comp, enabled=self.enabled, lower_bound=self.lower_bound,
+                                  upper_bound=self.upper_bound, guild_id=self.guild_id)
+
 

@@ -22,6 +22,7 @@ Responsibilities:
         * ReminderPings
         * GuildConfig
         * SubmissionChannel
+        * etc
 """
 
 from typing import Optional, List
@@ -32,13 +33,14 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, ExtraSettingConfig,
 )
 from infrastructure.orm.orm_models import (
     LogChannelORM, HostRoleORM, SubmitterRoleORM,
     SeekingChannelORM, TasksChannelORM, AnnouncementsChannelORM,
     SpeedTaskLengthORM, SpeedTaskDescORM,
     SpeedTaskRemindersORM, ReminderPingsORM, GuildConfigORM, SubmissionChannelORM, SubmissionFileConfigORM,
+    ExtraSettingORM,
 )
 
 
@@ -320,4 +322,26 @@ class SqlAlchemyConfigRepository(ConfigRepository):
                 row.guild_id = cfg.guild_id
             else:
                 sess.add(SubmissionFileConfigORM.from_domain(cfg))
+            await sess.commit()
+
+
+    async def get_extra_setting(self, comp: str) -> Optional[ExtraSettingConfig]:
+        async with self._sf() as sess:
+            row = (await sess.scalars(
+                select(ExtraSettingORM).where(ExtraSettingORM.comp == comp)
+            )).first()
+            return row.to_domain() if row else None
+
+    async def save_extra_setting(self, cfg: ExtraSettingConfig) -> None:
+        async with self._sf() as sess:
+            row = (await sess.scalars(
+                select(ExtraSettingORM).where(ExtraSettingORM.comp == cfg.comp)
+            )).first()
+            if row:
+                row.enabled = cfg.enabled
+                row.lower_bound = cfg.lower_bound
+                row.upper_bound = cfg.upper_bound
+                row.guild_id = cfg.guild_id
+            else:
+                sess.add(ExtraSettingORM.from_domain(cfg))
             await sess.commit()

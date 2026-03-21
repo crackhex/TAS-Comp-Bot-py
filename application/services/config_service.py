@@ -22,6 +22,7 @@ Responsibilities:
     - get_speed_task_reminders / set_speed_task_reminders
     - get_reminder_pings / set_reminder_pings
     - get_guild_config / set_guild_config
+    - etc
 """
 
 from typing import Optional
@@ -29,9 +30,10 @@ from domain.config import (
     LogChannel, HostRole, SubmitterRole,
     SeekingChannel, TasksChannel, AnnouncementsChannel,
     SpeedTaskLength, SpeedTaskDesc,
-    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig,
+    SpeedTaskReminders, ReminderPings, GuildConfig, SubmissionChannel, SubmissionFileConfig, ExtraSettingConfig,
 )
 from domain.repositories import ConfigRepository
+
 
 class ConfigService:
     def __init__(self, config_repo: ConfigRepository):
@@ -161,3 +163,12 @@ class ConfigService:
     async def set_submission_file_extension(self, comp: str, ext: str, guild_id: int) -> None:
         cfg = SubmissionFileConfig(comp=comp, ext=ext.lower(), guild_id=guild_id)
         await self._repo.save_submission_file_extension(cfg)
+
+    # ── ExtraSetting ──
+    async def get_extra_setting(self, comp: str) -> Optional[ExtraSettingConfig]:
+        return await self._repo.get_extra_setting(comp)
+
+    async def set_extra_setting(self, comp: str, enabled: bool, lower_bound: int, upper_bound: int, guild_id: int) -> None:
+        cfg = ExtraSettingConfig(comp=comp, enabled=enabled, lower_bound=lower_bound, upper_bound=upper_bound,
+                                 guild_id=guild_id)
+        await self._repo.save_extra_setting(cfg)

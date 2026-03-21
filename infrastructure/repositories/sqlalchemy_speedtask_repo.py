@@ -14,6 +14,7 @@ Responsibilities:
     - get_by_user(user_id): load a session by Discord user ID
     - list_active_sessions(): list all active sessions
     - expire_session(user_id): mark a session inactive (ended) and return it
+    - cancel_session(user_id): Cancel/clear a user's session
     - clear_all(): delete all speed‑task sessions
 """
 from sqlalchemy import select, delete
@@ -126,12 +127,12 @@ class SqlAlchemySpeedTaskRepository(SpeedTaskRepository):
             )
         return result
 
-    async def expire_session(self, user_discord_id: int) -> SpeedTaskSession:
+    async def expire_session(self, user_id: int) -> SpeedTaskSession:
         """
         Mark the session for the given user_id as inactive (which means their time is up), then return the updated session.
 
         Args:
-            user_discord_id (int): Discord user ID whose session must be expired.
+            user_id (int): Discord user ID whose session must be expired.
 
         Returns:
             SpeedTaskSession: the session object after expiration.
@@ -140,16 +141,30 @@ class SqlAlchemySpeedTaskRepository(SpeedTaskRepository):
             RuntimeError: if no session exists or reload fails.
         """
         async with self._sf() as db:
-            orm = await db.get(SpeedTaskSessionORM, user_discord_id)
+            orm = await db.get(SpeedTaskSessionORM, user_id)
             if not orm:
-                raise RuntimeError(f"No session found for user {user_discord_id}")
+                raise RuntimeError(f"No session found for user {user_id}")
             orm.active = False
             await db.commit()
 
-        session = await self.get_by_user(user_discord_id)
+        session = await self.get_by_user(user_id)
         if not session:
             raise RuntimeError("Failed to reload session after expiring.")
         return session
+
+    async def cancel_session(self, user_id) -> None:
+        """
+        Delete a user's session.
+
+        Args:
+            user_id (int): Discord user ID whose session must be canceled.
+
+        Returns:
+            None
+        """
+        async with self._sf() as db:
+            await db.execute(delete(SpeedTaskSessionORM).where(SpeedTaskSessionORM.user_id == user_id))
+            await db.commit()
 
     async def clear_all(self) -> None:
         """

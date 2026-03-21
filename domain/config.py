@@ -21,6 +21,7 @@ Responsibilities:
     - SpeedTaskReminders: reminder schedule (in minutes) for speed-tasks
     - ReminderPings: ping settings for reminders (@everyone or not)
     - GuildConfig: mapping of a guild to its active competition key
+    - etc
 """
 
 from dataclasses import dataclass
@@ -118,6 +119,14 @@ class GuildConfig:
 class SubmissionFileConfig:
     comp: str
     ext: str
+    guild_id: int
+
+@dataclass
+class ExtraSettingConfig:
+    comp: str
+    enabled: bool
+    lower_bound: int
+    upper_bound: int
     guild_id: int
 
 

@@ -19,18 +19,13 @@ Responsibilities:
 
 from __future__ import annotations
 
-from typing import Dict, Type
 
 from discord import app_commands, Message
 from discord.ext import commands
 
 from adapters.discord.checks import host_only
 from application.parsers.registry import EXTENSION_STRATEGIES
-from application.parsers.rkg_parser_strategy   import RkgParserStrategy
-from application.parsers.rksys_parser_strategy import RksysParserStrategy
 from application.parsers.null_parser_strategy  import NullParserStrategy
-from application.parsers.parser_strategy import ParserStrategy
-from application.parsers.zip_parser_strategy import ZipParserStrategy
 from application.services.config_service import ConfigService
 
 # --------------------------------------------------------------------------- #

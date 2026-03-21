@@ -13,12 +13,10 @@ Responsibilities:
     - Resolve the target guild when invoked from a server or via DM.
     - Validate that a speed-task is active and correctly configured.
     - Enforce “one session per task, per user” (no re-request after their session is over).
-    - Round the personal deadline to the nearest minute.
     - DM the user the description and deadline, then persist via SpeedTaskService.
 """
 
 import time
-from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
@@ -91,16 +89,15 @@ class RequestTaskCommand(commands.Cog):
             return await ctx.send("There is no ongoing speed task!")
 
         user_id = ctx.author.id
-        now     = int(time.time())
 
-        # ───── 2) One /requesttask per task (even after expiry) ───── #
+        # ───── 2) One requesttask per task (even after expiry) ───── #
         existing = await self.speed_svc.get_session_for_user(user_id)
         if existing:
             # If still active, show remaining time
             if existing.is_active():
                 return await ctx.send(
-                    "ℹ️ You already have an ongoing session, "
-                    f"your deadline is: <t:{existing.personal_deadline}:R>"
+                    "You already have an ongoing speed task session, "
+                    f"check your DMs for deadline."
                 )
             # Otherwise it already ended: deny a second attempt
             return await ctx.send(
@@ -120,22 +117,21 @@ class RequestTaskCommand(commands.Cog):
                 f"See {mention}."
             )
 
-        # ───── 4) Load description & length from config ───── #
-        desc_cfg   = await self.cfg_svc.get_speed_task_desc(gc.comp)
-        length_cfg = await self.cfg_svc.get_speed_task_length(gc.comp)
-        if not desc_cfg or not length_cfg:
-            return await ctx.send("The speed-task configuration is incomplete. Please contact the current host.")
+        # ───── 4) Load description from config ───── #
+        desc_cfg = await self.cfg_svc.get_speed_task_desc(gc.comp)
+        if not desc_cfg:
+            return await ctx.send("The speed-task description is not configured. Please contact the current host.")
 
-        # ───── 5) Compute and minute-round the personal deadline ───── #
-        length_sec   = int(length_cfg.time * 3600)
-        raw_deadline = now + length_sec
-        dt = datetime.fromtimestamp(raw_deadline)
-        # Round seconds -> 0; if ≥ 30s, ceiling to next full minute
-        if dt.second >= 30:
-            dt = dt.replace(second=0, microsecond=0) + timedelta(minutes=1)
-        else:
-            dt = dt.replace(second=0, microsecond=0)
-        personal_deadline = int(dt.timestamp())
+        # ───── 5) Delegate to the service to start the session (it will compute deadline there) ───── #
+        try:
+            session = await self.speed_svc.request_task(
+                user_discord_id=user_id,
+                guild_id=target_guild.id,
+            )
+        except RuntimeError as e:
+            return await ctx.send(str(e))
+
+        personal_deadline = session.personal_deadline
 
         # ───── 6) DM the description + deadline ───── #
         dm_text = (
@@ -146,22 +142,18 @@ class RequestTaskCommand(commands.Cog):
         )
         try:
             await ctx.author.send(dm_text)
+
+        # If user can't be DMed, cancel his session and warn him.
         except discord.Forbidden:
+            await self.speed_svc.cancel_session(user_id)
             return await ctx.send(
                 "❌ I couldn’t DM you (check your privacy settings). "
                 "Your speed task session was not started."
             )
 
-        # ───── 7) Persist the session ───── #
-        await self.speed_svc.request_task(
-            user_discord_id=ctx.author.id,
-            guild_id=       target_guild.id,
-        )
-
-        # ───── 8) Public confirmation ───── #
+        # ───── 7) Public confirmation ───── #
         if ctx.guild:
             return await ctx.send("Your speed task has started; check your DMs.")
-
         return None
 
 
