@@ -14,21 +14,79 @@ Responsibilities:
     - Resolve the active task (fallback to the last task if it's past deadline).
     - Fetch all submissions for that task via SubmissionService.
     - Split output into multiple messages under Discord size limits.
-    - Provide a batch file to download all ghosts.
+    - Provide a zip file with all ghosts.
 """
 
 import asyncio
 import io
-from typing import List
+import re
+import zipfile
+from datetime import datetime, timezone
+from pathlib import PurePosixPath
+from typing import List, NamedTuple, Optional, Set, Tuple
+from urllib.parse import urlparse
 
+import aiohttp
 import discord
 from discord.ext import commands
 
 from application.services.task_manager       import TaskManager
+from application.parsers.rkg_parser_strategy import get_ghost_time
 from adapters.discord.checks                 import host_only
 
 MSG_LIMIT = 2_000
 BUFFER    = 50
+
+# How many submission files to download from the CDN at once.
+MAX_CONCURRENT_DOWNLOADS = 5
+# Per-request timeout when downloading a submission file.
+DOWNLOAD_TIMEOUT = aiohttp.ClientTimeout(total=30)
+# Fallback attachment size limit when the guild one is unavailable (bytes).
+DEFAULT_FILESIZE_LIMIT = 10 * 1024 * 1024
+# Headroom kept under the attachment limit for zip overhead (bytes).
+ZIP_OVERHEAD_MARGIN = 256 * 1024
+# Longest participant string allowed inside a filename.
+MAX_PARTICIPANTS_LEN = 80
+# How many failed downloads to name in the closing message.
+MAX_REPORTED_FAILURES = 10
+
+# Characters that are unsafe in a filename on Windows/macOS/Linux.
+# ``\w`` under the unicode flag keeps accents and CJK, so display names
+# survive mostly intact.
+_UNSAFE_CHARS = re.compile(r"[^\w\-.& ]", re.UNICODE)
+# Reserved device names on Windows; a file called ``CON.rkg`` cannot be
+# extracted there.
+_WINDOWS_RESERVED = {
+    "CON", "PRN", "AUX", "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+}
+
+
+class ArchiveEntry(NamedTuple):
+    """One downloaded file, ready to be written into an archive."""
+    name: str
+    payload: bytes
+    uploaded_at: int
+
+
+def _split_ms(seconds: float) -> Tuple[int, int, int]:
+    """
+    Split a duration in seconds into ``(minutes, seconds, milliseconds)``.
+
+    Rounds to whole milliseconds *first*: float arithmetic stores 48.687 as
+    48.68699999…, which truncation would render as ``.686``.
+
+    Args:
+        seconds (float): duration in seconds.
+
+    Returns:
+        tuple: minutes, seconds, milliseconds — all whole numbers.
+    """
+    total_ms = round(seconds * 1000)
+    m, rem = divmod(total_ms, 60_000)
+    s, ms  = divmod(rem, 1000)
+    return m, s, ms
 
 
 def fmt_time(run_time: float | None) -> str:
@@ -43,9 +101,264 @@ def fmt_time(run_time: float | None) -> str:
     """
     if not run_time or run_time <= 0:
         return "??:??.???"
-    m, s = divmod(run_time, 60)
-    ms = (s - int(s)) * 1000
-    return f"{int(m)}:{int(s):02}.{int(ms):03}"
+    m, s, ms = _split_ms(run_time)
+    return f"{m}:{s:02}.{ms:03}"
+
+
+def _fmt_ghost_time(seconds: float) -> str:
+    """Format a run time in seconds as ``1m02s678`` for use in a filename."""
+    m, s, ms = _split_ms(seconds)
+    return f"{m}m{s:02}s{ms:03}"
+
+
+def _ghost_time_from(payload: bytes) -> Optional[str]:
+    """
+    Read the ghost time out of a downloaded payload, when it is an RKG.
+
+    Submissions reloaded from the database carry a plain SubmissionFile, so
+    the ghost time is not available there; the raw bytes are the only source.
+
+    Args:
+        payload (bytes): raw file content.
+
+    Returns:
+        str | None: formatted ghost time, or None for .dat, .zip or malformed
+        files.
+    """
+    if len(payload) < 0x07 or payload[:4] != b"RKGD":
+        return None
+    try:
+        return _fmt_ghost_time(get_ghost_time(bytearray(payload)))
+    except Exception:
+        return None
+
+
+def _safe_name(name: str, fallback: str = "user") -> str:
+    """
+    Turn an arbitrary Discord display name into a safe filename component.
+
+    Args:
+        name (str): Raw display name, possibly containing slashes, emoji, etc.
+        fallback (str): Value to use when nothing usable remains.
+
+    Returns:
+        str: Sanitised, length-capped name.
+    """
+    cleaned = _UNSAFE_CHARS.sub("_", name or "")
+    # Windows rejects trailing dots and spaces.
+    cleaned = cleaned.strip(" .")
+    cleaned = cleaned[:60]
+    if not cleaned or cleaned.upper() in _WINDOWS_RESERVED:
+        return fallback
+    return cleaned
+
+
+def _file_participants(sub) -> str:
+    """
+    Participant names for use in a filename.
+
+    Unlike ``_who_for``, the team's own name is deliberately left out: hosts
+    look runs up by competitor, so the team name only makes the filename
+    longer. Each member is sanitised individually so that one odd display
+    name cannot swallow the separator.
+
+    Args:
+        sub: Submission entity.
+
+    Returns:
+        str: e.g. ``DashQC & Police`` for a team, ``DashQC`` for a solo run.
+    """
+    if sub.team:
+        joined = " & ".join(_safe_name(m.display_name) for m in sub.team.members)
+    else:
+        joined = _safe_name(sub.submitted_by.display_name)
+
+    if len(joined) > MAX_PARTICIPANTS_LEN:
+        joined = joined[:MAX_PARTICIPANTS_LEN].rstrip(" .&")
+    return joined or "team"
+
+
+def _unique_name(base: str, ext: str, used: Set[str]) -> str:
+    """
+    Return ``base.ext``, suffixed with ``(2)``, ``(3)``… on collision.
+
+    Comparison is case-insensitive because NTFS and APFS are: ``Dash.rkg``
+    and ``dash.rkg`` would overwrite each other on extraction.
+
+    Args:
+        base (str): filename without extension.
+        ext (str): extension without a leading dot.
+        used (set): names already taken; mutated in place.
+
+    Returns:
+        str: a filename not yet present in ``used``.
+    """
+    name = f"{base}.{ext}"
+    n = 2
+    while name.lower() in used:
+        name = f"{base} ({n}).{ext}"
+        n += 1
+    used.add(name.lower())
+    return name
+
+
+def _entry_ext(url: str, default_ext: str) -> str:
+    """
+    Derive a file extension from a CDN URL, ignoring query parameters.
+
+    Discord attachment URLs look like ``.../file.rkg?ex=...&is=...``, so the
+    suffix has to be taken from the parsed path rather than the raw string.
+    Falls back to the competition's configured extension when the URL has no
+    usable suffix.
+
+    Args:
+        url (str): Stored submission URL.
+        default_ext (str): Extension configured for the competition.
+
+    Returns:
+        str: Extension without a leading dot.
+    """
+    suffix = PurePosixPath(urlparse(url).path).suffix.lstrip(".").lower()
+    return suffix or default_ext
+
+
+def _who_for(sub) -> str:
+    """
+    Build the participant label used in the listing and in error messages.
+
+    Args:
+        sub: Submission entity.
+
+    Returns:
+        str: Team name/members joined, or the solo submitter's display name.
+    """
+    if sub.team:
+        members = " & ".join(m.display_name for m in sub.team.members)
+        if sub.team.name and sub.team.name.strip():
+            return f"{sub.team.name} ({members})"
+        return members
+    return sub.submitted_by.display_name
+
+
+async def _download_one(
+        session: aiohttp.ClientSession,
+        sem: asyncio.Semaphore,
+        sub,
+) -> Tuple[object, Optional[bytes], Optional[str]]:
+    """
+    Download a single submission file.
+
+    Args:
+        session (aiohttp.ClientSession): Shared HTTP session.
+        sem (asyncio.Semaphore): Concurrency limiter.
+        sub: Submission entity whose ``file.path`` holds the URL.
+
+    Returns:
+        tuple: ``(sub, payload, error)`` — exactly one of payload/error is set.
+    """
+    async with sem:
+        try:
+            async with session.get(sub.file.path) as resp:
+                resp.raise_for_status()
+                return sub, await resp.read(), None
+        except Exception as exc:  # network, 404, expired CDN link…
+            return sub, None, f"{type(exc).__name__}: {exc}"
+
+
+def _prepare_entries(
+        task,
+        results,
+        default_ext: str,
+) -> Tuple[List[ArchiveEntry], List[str]]:
+    """
+    Turn download results into named archive entries.
+
+    Pure function: no network, no Discord. Filenames follow
+    ``Task N - participant - 1m02s678.ext``, the ghost time being omitted
+    for formats that do not carry one.
+
+    Args:
+        task: Task entity (used for the filename prefix).
+        results (list): ``(sub, payload, error)`` triples from _download_one.
+        default_ext (str): Extension configured for the competition.
+
+    Returns:
+        tuple: ``(entries, failures)`` — failures are human-readable lines.
+    """
+    entries: List[ArchiveEntry] = []
+    failures: List[str] = []
+    used: Set[str] = set()
+
+    for idx, (sub, payload, error) in enumerate(results, 1):
+        if error is not None:
+            failures.append(f"{idx}. {_who_for(sub)} — {error}")
+            continue
+
+        base = f"Task {task.number} - {_file_participants(sub)}"
+        ghost = _ghost_time_from(payload)
+        if ghost:
+            base = f"{base} - {ghost}"
+
+        name = _unique_name(base, _entry_ext(sub.file.path, default_ext), used)
+        entries.append(ArchiveEntry(name, payload, sub.file.uploaded_at))
+
+    return entries, failures
+
+
+def _build_archive(entries: List[ArchiveEntry]) -> io.BytesIO:
+    """
+    Zip a batch of already-downloaded files in memory.
+
+    Runs in a worker thread (see caller) so compression never blocks the
+    event loop.
+
+    Args:
+        entries (list): the files to archive.
+
+    Returns:
+        io.BytesIO: Rewound buffer holding the archive.
+    """
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for entry in entries:
+            stamp = datetime.fromtimestamp(entry.uploaded_at, tz=timezone.utc)
+            info = zipfile.ZipInfo(entry.name, date_time=stamp.timetuple()[:6])
+            info.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(info, entry.payload)
+    buffer.seek(0)
+    return buffer
+
+
+def _partition(
+        entries: List[ArchiveEntry],
+        limit: int,
+) -> List[List[ArchiveEntry]]:
+    """
+    Split entries into batches that each fit under the attachment limit.
+
+    Sizes are measured uncompressed, which is deliberately pessimistic: RKG
+    payloads are often already YAZ1-compressed and barely shrink further.
+
+    Args:
+        entries (list): the files to archive.
+        limit (int): Maximum archive size in bytes.
+
+    Returns:
+        list: List of batches, each a list of entries.
+    """
+    batches: List[List[ArchiveEntry]] = []
+    current: List[ArchiveEntry] = []
+    running = 0
+    for entry in entries:
+        size = len(entry.payload)
+        if current and running + size > limit:
+            batches.append(current)
+            current, running = [], 0
+        current.append(entry)
+        running += size
+    if current:
+        batches.append(current)
+    return batches
 
 
 class GetSubmissionsCommand(commands.Cog):
@@ -67,11 +380,11 @@ class GetSubmissionsCommand(commands.Cog):
         description="[Host] Retrieves all submissions for the current task",
         usage="$/get-submissions",
         help=("Retrieves all submission for the latest task. This shows, for each submission, the user (and their team "
-              "if applicable),  the time at which the file was submitted, and the time of the run itself. "
+              "if applicable), the time at which the file was submitted, and the time of the run itself. "
               "\n\nNote that unless the submission has been manually "
               "edited using /edit-submissions, the fetched timed may be unknown or wrong. This can happen if the "
               "competition is backwards, or is on multiple tracks.\n\n"
-            
+
             "Parameters:\n"
                 "None"
         ),
@@ -89,7 +402,7 @@ class GetSubmissionsCommand(commands.Cog):
             4) Build formatted lines for solo/team entries.
             5) Chunk lines into messages under ~1950 chars.
             6) Send messages with a header on the first chunk.
-            7) Send a batch file which downloads all the ghosts
+            7) Download every submitted file and attach them as .zip archives.
 
         Args:
             ctx (commands.Context): Invocation context.
@@ -121,15 +434,7 @@ class GetSubmissionsCommand(commands.Cog):
         # 5) Build listing lines
         lines: List[str] = []
         for idx, sub in enumerate(subs, 1):
-            if sub.team:
-                members = " & ".join(m.display_name for m in sub.team.members)
-                if sub.team.name and sub.team.name.strip():
-                    who = f"{sub.team.name} ({members})"
-                else:
-                    who = members
-            else:
-                who = sub.submitted_by.display_name
-
+            who = _who_for(sub)
             run_t = fmt_time(sub.time)
             ts    = f"<t:{sub.file.uploaded_at}:f>"
             lines.append(
@@ -163,46 +468,64 @@ class GetSubmissionsCommand(commands.Cog):
             # Small delay to avoid rate limits
             await asyncio.sleep(1)
 
-
-    # Generate a Windows batch script to download all submission files
-
-        # collect all URLs
-        download_lines = ['@echo off', '']
-        comp = (await ctx.bot.config_service.get_guild_config(ctx.guild.id)).comp
-        file_ext = (await ctx.bot.config_service.get_submission_file_extension(comp)).ext.lower()
-
-
-        # adding the curl command for each file
-        for sub in subs:
-            if sub.team:
-                who = "_".join(m.display_name.replace(" ", "_") for m in sub.team.members)
-            else:
-                who = sub.submitted_by.display_name
-
-
-            download_lines.append(
-                f'curl -L -o "Task{task.number}_{who}.{file_ext}" "{sub.file.path}"'
-            )
-
-
-        download_lines += [
-            "",
-            "echo All downloads complete.",
-            "pause"
-        ]
-
-        script_content = "\r\n".join(download_lines)
-        script_path = f"Task{task.number}Ghosts.bat"
-
-        # Create bat file
-        buffer = io.BytesIO(script_content.encode("utf-8"))
-        buffer.seek(0)
-
-        await ctx.send("Download all runs: ",file = discord.File(buffer, filename=script_path))
-
+        await self._send_archives(ctx, task, subs)
 
         return None
 
+    # noinspection PyMethodMayBeStatic
+    async def _send_archives(self, ctx: commands.Context, task, subs) -> None:
+        """
+        Download every submission file and post them as zip attachment(s).
+
+        Args:
+            ctx (commands.Context): Invocation context.
+            task: Task entity (used for naming).
+            subs (list): Submissions, already sorted by id.
+
+        Returns:
+            None
+        """
+        comp = (await ctx.bot.config_service.get_guild_config(ctx.guild.id)).comp
+        default_ext = (
+            await ctx.bot.config_service.get_submission_file_extension(comp)
+        ).ext.lower().lstrip(".")
+
+        progress = await ctx.send(
+            f"Downloading {len(subs)} submission file(s)…"
+        )
+
+        sem = asyncio.Semaphore(MAX_CONCURRENT_DOWNLOADS)
+        async with aiohttp.ClientSession(timeout=DOWNLOAD_TIMEOUT) as session:
+            results = await asyncio.gather(
+                *(_download_one(session, sem, sub) for sub in subs)
+            )
+
+        entries, failures = _prepare_entries(task, results, default_ext)
+
+        if not entries:
+            await progress.edit(
+                content="Could not download any submission file.\n"
+                        + "\n".join(failures[:MAX_REPORTED_FAILURES])
+            )
+            return
+
+        limit   = getattr(ctx.guild, "filesize_limit", None) or DEFAULT_FILESIZE_LIMIT
+        batches = _partition(entries, max(limit - ZIP_OVERHEAD_MARGIN, 1))
+
+        for part_no, batch in enumerate(batches, 1):
+            buffer = await asyncio.to_thread(_build_archive, batch)
+            suffix = "" if len(batches) == 1 else f" - part {part_no}"
+            filename = f"Task {task.number} Submissions{suffix}.zip"
+            await ctx.send(file=discord.File(buffer, filename=filename))
+            await asyncio.sleep(1)
+
+        summary = f"Archived {len(entries)} file(s)."
+        if failures:
+            summary += (
+                "\nFailed to download:\n"
+                + "\n".join(failures[:MAX_REPORTED_FAILURES])
+            )
+        await progress.edit(content=summary)
 
 
 async def setup(bot: commands.Bot) -> None:

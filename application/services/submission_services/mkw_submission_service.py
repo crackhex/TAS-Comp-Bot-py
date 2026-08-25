@@ -123,6 +123,7 @@ class MKWSubmissionService(BaseSubmissionService):
         """
         Extract MKW-specific metadata and copy it onto submission.
 
+        * ghost_time → submission.ghost_time
         * run_time → submission.time
         * character / vehicle if available (only on RKG), else None
         """
@@ -132,5 +133,6 @@ class MKWSubmissionService(BaseSubmissionService):
         else:
             submission.time = 0.0
 
+        submission.ghost_time = getattr(file_obj, "ghost_time", None)
         submission.character = getattr(file_obj, "character", None)
         submission.vehicle   = getattr(file_obj, "vehicle",   None)

@@ -131,6 +131,7 @@ class SubmissionORM(Base):
     team_id:     Optional[int]  = Column("team_id",     Integer, nullable=True)
     url:         str            = Column("url",         String,  nullable=False)
     time:        float          = Column("time",        Float,   default=0.0)
+    ghost_time: Optional[float] = Column("ghost_time",  Float, nullable=True)
     uploaded_at: int            = Column("uploaded_at", Integer, nullable=False, default=0)
     dq:          bool           = Column("dq",          Boolean, default=False)
     dq_reason:   Optional[str]  = Column("dq_reason",   String,  nullable=True)
@@ -148,6 +149,7 @@ class SubmissionORM(Base):
             team_id     = sub.team.id if sub.team else None,
             url         = sub.url,
             time        = sub.time,
+            ghost_time  = sub.ghost_time,
             uploaded_at = sub.file.uploaded_at,
             dq          = sub.dq,
             dq_reason   = sub.dq_reason,
@@ -183,6 +185,7 @@ class SubmissionORM(Base):
         )
         sub.id        = self.id
         sub.time      = self.time
+        sub.ghost_time= self.ghost_time
         sub.dq        = self.dq
         sub.dq_reason = self.dq_reason
         sub.character = self.character
