@@ -182,19 +182,22 @@ class RKGFile(SubmissionFile):
         character: int,
         vehicle: int,
         run_time: float,
+        ghost_time: float,
     ):
         """
         Args:
             lap_times (List[str]): raw lap time strings.
             character (int): character ID/index.
             vehicle (int): vehicle ID/index.
-            run_time (float): total run time in seconds.
+            run_time (float): run time in seconds (for the given lap).
+            ghost_time (float): Ghost time for a rkg
         """
         super().__init__(path, uploaded_at)
         self.lap_times = lap_times
         self.character = character
         self.vehicle = vehicle
         self.run_time = run_time
+        self.ghost_time = ghost_time
 
 
 class RKSysFile(SubmissionFile):
@@ -342,8 +345,10 @@ class Submission:
 
         # Populated after parsing
         self.time: Optional[float]   = None
+        self.ghost_time: Optional[float] = None
         self.character: Optional[str]= None
         self.vehicle: Optional[str]  = None
+
 
         # Disqualification fields
         self.dq: bool                = False

@@ -20,6 +20,35 @@ from domain.entities import RKGFile
 from .parser_strategy import ParserStrategy
 from crccheck.crc import Crc32IsoHdlc
 
+def _decode_time(b1: int, b2: int, b3: int) -> int:
+    """
+    Decode MKW's packed 3-byte time representation into whole milliseconds.
+
+    The same 7/7/10 bit layout is used for the header's finishing time and
+    for every lap time.
+
+    Returns:
+        int: time in whole milliseconds
+    """
+    minutes = b1 >> 1
+    seconds = ((b1 & 0x1) << 6) | (b2 >> 2)
+    millis  = ((b2 & 0x3) << 8) | b3
+    return (minutes * 60 + seconds) * 1000 + millis
+
+
+def get_ghost_time(rkg: bytearray) -> float:
+    """
+    Extract the ghost's finishing time from the RKG header.
+
+    Stored at offsets 0x04-0x06, always inside the fixed 0x88-byte header,
+    so CTGP compression never affects it. This is the *total* run time, as
+    opposed to ``get_lap_times`` which returns each lap separately.
+
+    Returns:
+        float: total run time in seconds (e.g. 62.678)
+    """
+    return _decode_time(rkg[0x04], rkg[0x05], rkg[0x06]) / 1000
+
 
 def get_lap_times(rkg: bytearray) -> List[str]:
     """
@@ -42,7 +71,7 @@ def get_lap_times(rkg: bytearray) -> List[str]:
         length = struct.unpack(">I", rkg[0x88:0x8C])[0] + 0x90
         rkg = rkg[:length]
 
-    nr_laps = rkg[0x10]
+    nr_laps = min(rkg[0x10], 5)
     lap_times: List[str] = []
     for i in range(nr_laps):
         # Byte layout: 3 bytes per lap starting at offset 0x11
@@ -50,9 +79,9 @@ def get_lap_times(rkg: bytearray) -> List[str]:
         b2 = rkg[0x12 + 3*i]
         b3 = rkg[0x13 + 3*i]
 
-        m  = b1 >> 1
-        s  = ((b1 & 0x1) << 6) | (b2 >> 2)
-        ms = ((b2 & 0x3) << 8) | b3
+        total_ms = _decode_time(b1, b2, b3)
+        m, rem   = divmod(total_ms, 60_000)
+        s, ms    = divmod(rem, 1000)
 
         lap_times.append(f"{m}:{s:02}.{ms:03}")
     return lap_times
@@ -132,7 +161,7 @@ class RkgParserStrategy(ParserStrategy):
             uploaded_at (int): UNIX timestamp when file was received
 
         Returns:
-            RKGFile: populated with lap_times, character, vehicle, run_time
+            RKGFile: populated with lap_times, character, vehicle, run_time, ghost_time
         """
         rkg = bytearray(file_bytes)
         laps = get_lap_times(rkg)
@@ -141,6 +170,7 @@ class RkgParserStrategy(ParserStrategy):
         run_time = readable_to_float(laps[0]) if laps else 0.0
         char_id  = get_character(rkg)
         veh_id   = get_vehicle(rkg)
+        ghost_time = get_ghost_time(rkg)
 
         return RKGFile(
             path="",
@@ -149,4 +179,5 @@ class RkgParserStrategy(ParserStrategy):
             character=char_id,
             vehicle=veh_id,
             run_time=run_time,
+            ghost_time=ghost_time,
         )
