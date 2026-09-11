@@ -19,6 +19,7 @@ Responsibilities:
 """
 
 import os
+import asyncio
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -27,7 +28,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase
 
 # Load environment variables from a .env file (DB_DIR, etc.)
@@ -69,9 +70,10 @@ def _migrate_sync() -> None:
     """
     Bring the database to the latest schema revision.
 
-    Handles three states:
+    Handles four states:
       - fresh database           -> run every migration from the baseline
       - pre-Alembic database     -> stamp the baseline, then upgrade
+      - empty alembic_version    -> stamp the baseline, then upgrade
       - Alembic-managed database -> upgrade (no-op when already current)
     """
 
@@ -82,13 +84,20 @@ def _migrate_sync() -> None:
         insp       = inspect(probe)
         adopted    = insp.has_table("alembic_version")
         has_schema = insp.has_table("submissions")
+
+        current_rev = None
+        if adopted:
+            with probe.connect() as conn:
+                current_rev = conn.execute(
+                    text("SELECT version_num FROM alembic_version")
+                ).scalar()
     finally:
         probe.dispose()
 
-    if has_schema and not adopted:
-        # Existing database created before Alembic was introduced (prod).
-        # Its schema already matches the baseline; record that fact
-        # without executing anything.
+    needs_stamp = (has_schema and not adopted) or (adopted and current_rev is None)
+    if needs_stamp:
+        # Existing database whose schema predates Alembic (or whose
+        # version table is empty).
         command.stamp(cfg, BASELINE_REVISION)
 
     command.upgrade(cfg, "head")
@@ -97,9 +106,9 @@ def _migrate_sync() -> None:
 
 async def init_db() -> None:
     """
-    Initialize the database by creating all tables defined in Base.metadata.
+    Make sure the database is up to the latest alembic version.
 
-    This should be called once at startup to ensure all tables exist.
+    Called once at startup.
 
     Args:
         None
@@ -107,6 +116,4 @@ async def init_db() -> None:
     Returns:
         None
     """
-    async with engine.begin() as conn:
-        # Run the create_all operation in the sync context
-        await conn.run_sync(Base.metadata.create_all)
+    await asyncio.to_thread(_migrate_sync)
