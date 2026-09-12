@@ -21,17 +21,9 @@ from typing import Optional
 from discord.ext import commands
 
 from adapters.discord.checks import host_only
+from adapters.discord.utils.time_format import fmt_time
 from application.services.task_manager       import TaskManager
 from application.services.config_service     import ConfigService
-
-
-def _format_time(seconds: Optional[float]) -> str:
-    """Format seconds -> M:SS.mmm (or placeholder if missing)."""
-    if seconds is None or seconds <= 0:
-        return "??:??.???"
-    m = int(seconds // 60)
-    s = seconds - m * 60
-    return f"{m}:{s:06.3f}"
 
 
 class EditSubmissionCommand(commands.Cog):
@@ -152,8 +144,8 @@ class EditSubmissionCommand(commands.Cog):
 
         # 6) Notify the competitor(s) via DM (team or solo)
         dm_message = (
-            f"🏁 Your submission for Task **{submission.task.number}, {submission.task.year}** has been updated by a host:\n"
-            f"• Time: **{_format_time(new_time)}**\n"
+            f"🏁 Your submission for **Task {submission.task.number}, {submission.task.year}** has been updated by a host:\n"
+            f"• Time: **{fmt_time(new_time)}**\n"
             f"• DQ: {'Yes' if dq else 'No'}"
         )
         if dq and dq_reason:
@@ -174,16 +166,16 @@ class EditSubmissionCommand(commands.Cog):
             try:
                 await user_obj.send(dm_message)
             except discord.Forbidden:
-                await ctx.send(f"Couldn't notify {user_obj.id}.")
+                await ctx.send(f"Couldn't notify <@{user_obj.id}>.")
 
         # 7) Confirmation with “old -> new” summary
         lines = [f"Successfully edited **{member.display_name}**’s submission:"]
 
         # Time summary
         if old_time is not None:
-            lines.append(f"• Time: {_format_time(old_time)} → **{_format_time(submission.time)}**")
+            lines.append(f"• Time: {fmt_time(old_time)} → **{fmt_time(submission.time)}**")
         else:
-            lines.append(f"• Time: **{_format_time(submission.time)}**")
+            lines.append(f"• Time: **{fmt_time(submission.time)}**")
         # DQ summary
         if old_dq is not None and old_dq != submission.dq:
             if submission.dq:
