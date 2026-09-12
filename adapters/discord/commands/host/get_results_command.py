@@ -21,6 +21,8 @@ from __future__ import annotations
 import asyncio
 from discord.ext import commands
 
+from adapters.discord.utils.time_format import fmt_time
+
 
 class GetResultsCommand(commands.Cog):
     """Return a nicely-formatted leaderboard for the latest task."""
@@ -89,7 +91,7 @@ class GetResultsCommand(commands.Cog):
         for sub in known:
             if prev_time is None or abs(sub.time - prev_time) > 1e-6:
                 place = offset
-            txt = f"{ordinal(place)}. {display(sub)} — {secs_to_readable(sub.time)}"
+            txt = f"{ordinal(place)}. {display(sub)} — {fmt_time(sub.time)}"
             if place <= 3:
                 txt = f"**{txt}**"
             lines.append(txt)
@@ -102,13 +104,13 @@ class GetResultsCommand(commands.Cog):
             lines.append("")
             for sub in dqed:
                 reason = f" [{sub.dq_reason}]" if sub.dq_reason else ""
-                lines.append(f"DQ. {display(sub)} — {secs_to_readable(sub.time)}{reason}")
+                lines.append(f"DQ. {display(sub)} — {fmt_time(sub.time)}{reason}")
 
         # 5) Unknown‐time runs → show at the bottom
         if unknown:
             lines.append("")
             for sub in unknown:
-                lines.append(f"N/A. {display(sub)} — {secs_to_readable(sub.time)}")
+                lines.append(f"N/A. {display(sub)} — {fmt_time(sub.time)}")
 
         content = "\n".join(lines)
 
@@ -124,13 +126,6 @@ class GetResultsCommand(commands.Cog):
             await asyncio.sleep(1)
 
 
-def secs_to_readable(t: float | None) -> str:
-    """Convert seconds to ``M:SS.mmm`` or placeholders when unknown."""
-    if t is None or t <= 0:
-        return "??:??.???"
-    m, s = divmod(t, 60)
-    ms   = int(round((s - int(s)) * 1000))
-    return f"{int(m)}:{int(s):02}.{ms:03}"
 
 
 # ───────── Extension entrypoint ────────────────────────────────────────────

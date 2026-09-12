@@ -21,18 +21,21 @@ import asyncio
 import io
 import re
 import zipfile
+import zlib
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
-from typing import List, NamedTuple, Optional, Set, Tuple
+from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 from urllib.parse import urlparse
 
 import aiohttp
 import discord
 from discord.ext import commands
+from discord.http import Route
 
 from application.services.task_manager       import TaskManager
 from application.parsers.rkg_parser_strategy import get_ghost_time
 from adapters.discord.checks                 import host_only
+from adapters.discord.utils.time_format      import fmt_time, fmt_filename_time
 
 MSG_LIMIT = 2_000
 BUFFER    = 50
@@ -45,6 +48,8 @@ DOWNLOAD_TIMEOUT = aiohttp.ClientTimeout(total=30)
 DEFAULT_FILESIZE_LIMIT = 10 * 1024 * 1024
 # Headroom kept under the attachment limit for zip overhead (bytes).
 ZIP_OVERHEAD_MARGIN = 256 * 1024
+# Estimated zip bookkeeping bytes per archive entry (headers, central dir).
+ZIP_ENTRY_OVERHEAD = 256
 # Longest participant string allowed inside a filename.
 MAX_PARTICIPANTS_LEN = 80
 # How many failed downloads to name in the closing message.
@@ -68,47 +73,7 @@ class ArchiveEntry(NamedTuple):
     name: str
     payload: bytes
     uploaded_at: int
-
-
-def _split_ms(seconds: float) -> Tuple[int, int, int]:
-    """
-    Split a duration in seconds into ``(minutes, seconds, milliseconds)``.
-
-    Rounds to whole milliseconds *first*: float arithmetic stores 48.687 as
-    48.68699999…, which truncation would render as ``.686``.
-
-    Args:
-        seconds (float): duration in seconds.
-
-    Returns:
-        tuple: minutes, seconds, milliseconds — all whole numbers.
-    """
-    total_ms = round(seconds * 1000)
-    m, rem = divmod(total_ms, 60_000)
-    s, ms  = divmod(rem, 1000)
-    return m, s, ms
-
-
-def fmt_time(run_time: float | None) -> str:
-    """
-    Format a run time (seconds as float) into `M:SS.mmm`.
-
-    Args:
-        run_time (float | None): Time in seconds, may be None.
-
-    Returns:
-        str: Human-readable time; "??:??.???" if missing or non-positive.
-    """
-    if not run_time or run_time <= 0:
-        return "??:??.???"
-    m, s, ms = _split_ms(run_time)
-    return f"{m}:{s:02}.{ms:03}"
-
-
-def _fmt_ghost_time(seconds: float) -> str:
-    """Format a run time in seconds as ``1m02s678`` for use in a filename."""
-    m, s, ms = _split_ms(seconds)
-    return f"{m}m{s:02}s{ms:03}"
+    zip_size: int  # estimated deflated size inside the archive, in bytes
 
 
 def _ghost_time_from(payload: bytes) -> Optional[str]:
@@ -128,7 +93,7 @@ def _ghost_time_from(payload: bytes) -> Optional[str]:
     if len(payload) < 0x07 or payload[:4] != b"RKGD":
         return None
     try:
-        return _fmt_ghost_time(get_ghost_time(bytearray(payload)))
+        return fmt_filename_time(get_ghost_time(bytearray(payload)))
     except Exception:
         return None
 
@@ -142,7 +107,7 @@ def _safe_name(name: str, fallback: str = "user") -> str:
         fallback (str): Value to use when nothing usable remains.
 
     Returns:
-        str: Sanitised, length-capped name.
+        str: Sanitized, length-capped name.
     """
     cleaned = _UNSAFE_CHARS.sub("_", name or "")
     # Windows rejects trailing dots and spaces.
@@ -157,10 +122,8 @@ def _file_participants(sub) -> str:
     """
     Participant names for use in a filename.
 
-    Unlike ``_who_for``, the team's own name is deliberately left out: hosts
-    look runs up by competitor, so the team name only makes the filename
-    longer. Each member is sanitized individually so that one odd display
-    name cannot swallow the separator.
+    Unlike ``_who_for``, the team's own name is deliberately left out.
+    Each member is sanitized individually.
 
     Args:
         sub: Submission entity.
@@ -180,7 +143,7 @@ def _file_participants(sub) -> str:
 
 def _unique_name(base: str, ext: str, used: Set[str]) -> str:
     """
-    Return ``base.ext``, suffixed with ``(2)``, ``(3)``… on collision.
+    Return ``base.ext``, suffixed with ``(2)``, ``(3)``... on collision.
 
     Comparison is case-insensitive because NTFS and APFS are: ``Dash.rkg``
     and ``dash.rkg`` would overwrite each other on extraction.
@@ -240,10 +203,45 @@ def _who_for(sub) -> str:
     return sub.submitted_by.display_name
 
 
+async def _refresh_cdn_urls(bot, urls: List[str]) -> Dict[str, str]:
+    """
+    Ask Discord for freshly signed CDN URLs.
+
+    Stored attachment URLs carry a signature (``ex``/``is``/``hm``
+    query parameters) that makes them expire after 24h. This calls
+    ``POST /attachments/refresh-urls`` with the bot token and returns an
+    ``original -> refreshed`` mapping. URLs that could not be refreshed
+    are simply absent from the mapping, so callers fall back to the
+    stored URL.
+
+    Args:
+        bot: The bot instance (for its authenticated HTTP client).
+        urls (list): Stored attachment URLs, exactly as persisted.
+
+    Returns:
+        dict: stored URL -> freshly signed URL.
+    """
+    refreshed: Dict[str, str] = {}
+    for i in range(0, len(urls), 50):
+        chunk = urls[i:i + 50]
+        try:
+            data = await bot.http.request(
+                Route("POST", "/attachments/refresh-urls"),
+                json={"attachment_urls": chunk},
+            )
+        except (discord.HTTPException, aiohttp.ClientError, asyncio.TimeoutError):
+            continue  # network/API hiccup: stored URLs remain the fallback
+        for item in data.get("refreshed_urls", []):
+            if item.get("refreshed"):
+                refreshed[item["original"]] = item["refreshed"]
+    return refreshed
+
+
 async def _download_one(
         session: aiohttp.ClientSession,
         sem: asyncio.Semaphore,
         sub,
+        url: str,
 ) -> Tuple[object, Optional[bytes], Optional[str]]:
     """
     Download a single submission file.
@@ -251,14 +249,16 @@ async def _download_one(
     Args:
         session (aiohttp.ClientSession): Shared HTTP session.
         sem (asyncio.Semaphore): Concurrency limiter.
-        sub: Submission entity whose ``file.path`` holds the URL.
+        sub: Submission entity (kept for naming and error reporting).
+        url (str): URL to fetch - a refreshed CDN URL when available,
+            otherwise the stored one.
 
     Returns:
-        tuple: ``(sub, payload, error)`` — exactly one of payload/error is set.
+        tuple: ``(sub, payload, error)`` - exactly one of payload/error is set.
     """
     async with sem:
         try:
-            async with session.get(sub.file.path) as resp:
+            async with session.get(url) as resp:
                 resp.raise_for_status()
                 return sub, await resp.read(), None
         except Exception as exc:  # network, 404, expired CDN link…
@@ -273,8 +273,12 @@ def _prepare_entries(
     """
     Turn download results into named archive entries.
 
-    Filenames follow ``Task N - participant - 1m02s678.ext``, the ghost time being omitted
-    for formats that do not carry one.
+    Filenames follow ``Task N - participant - 1m02s678.ext``, the ghost
+    time being omitted for formats that do not carry one. Each entry also
+    gets an estimated deflated size, so partitioning can pack archives close to the
+    attachment limit regardless of how compressible the payloads are.
+
+    Compresses every payload once, so run it in a worker thread.
 
     Args:
         task: Task entity (used for the filename prefix).
@@ -299,7 +303,14 @@ def _prepare_entries(
             base = f"{base} - {ghost}"
 
         name = _unique_name(base, _entry_ext(sub.file.path, default_ext), used)
-        entries.append(ArchiveEntry(name, payload, sub.file.uploaded_at))
+        zip_size = (
+            len(zlib.compress(payload, 6))
+            + ZIP_ENTRY_OVERHEAD
+            + 2 * len(name)
+        )
+        entries.append(
+            ArchiveEntry(name, payload, sub.file.uploaded_at, zip_size)
+        )
 
     return entries, failures
 
@@ -335,8 +346,10 @@ def _partition(
     """
     Split entries into batches that each fit under the attachment limit.
 
-    Sizes are measured uncompressed, which is deliberately pessimistic: RKG
-    payloads are often already YAZ1-compressed and barely shrink further.
+    Sizes are the estimated deflated sizes from ``_prepare_entries``, so
+    highly compressible payloads pack into a single archive instead of
+    being split on their raw byte counts.
+
 
     Args:
         entries (list): the files to archive.
@@ -349,7 +362,7 @@ def _partition(
     current: List[ArchiveEntry] = []
     running = 0
     for entry in entries:
-        size = len(entry.payload)
+        size = entry.zip_size
         if current and running + size > limit:
             batches.append(current)
             current, running = [], 0
@@ -476,6 +489,10 @@ class GetSubmissionsCommand(commands.Cog):
         """
         Download every submission file and post them as zip attachment(s).
 
+        Stored CDN URLs are refreshed through Discord's API first, since
+        their signatures expire ~24h after issuance and many submissions
+        are downloaded well past that.
+
         Args:
             ctx (commands.Context): Invocation context.
             task: Task entity (used for naming).
@@ -493,13 +510,22 @@ class GetSubmissionsCommand(commands.Cog):
             f"Downloading {len(subs)} submission file(s)…"
         )
 
+        url_map = await _refresh_cdn_urls(
+            ctx.bot, [sub.file.path for sub in subs]
+        )
+
         sem = asyncio.Semaphore(MAX_CONCURRENT_DOWNLOADS)
         async with aiohttp.ClientSession(timeout=DOWNLOAD_TIMEOUT) as session:
             results = await asyncio.gather(
-                *(_download_one(session, sem, sub) for sub in subs)
+                *(_download_one(
+                    session, sem, sub,
+                    url_map.get(sub.file.path, sub.file.path),
+                ) for sub in subs)
             )
 
-        entries, failures = _prepare_entries(task, results, default_ext)
+        entries, failures = await asyncio.to_thread(
+            _prepare_entries, task, results, default_ext
+        )
 
         if not entries:
             await progress.edit(
@@ -508,7 +534,7 @@ class GetSubmissionsCommand(commands.Cog):
             )
             return
 
-        limit   = getattr(ctx.guild, "filesize_limit", None) or DEFAULT_FILESIZE_LIMIT
+        limit = getattr(ctx.guild, "filesize_limit", None) or DEFAULT_FILESIZE_LIMIT
         batches = _partition(entries, max(limit - ZIP_OVERHEAD_MARGIN, 1))
 
         for part_no, batch in enumerate(batches, 1):
@@ -521,8 +547,8 @@ class GetSubmissionsCommand(commands.Cog):
         summary = f"Archived {len(entries)} file(s)."
         if failures:
             summary += (
-                "\nFailed to download:\n"
-                + "\n".join(failures[:MAX_REPORTED_FAILURES])
+                    "\nFailed to download:\n"
+                    + "\n".join(failures[:MAX_REPORTED_FAILURES])
             )
         await progress.edit(content=summary)
 

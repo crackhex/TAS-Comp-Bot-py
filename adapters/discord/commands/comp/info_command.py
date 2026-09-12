@@ -20,15 +20,8 @@ from __future__ import annotations
 import discord
 from discord.ext import commands
 
+from adapters.discord.utils.time_format import fmt_time
 
-
-def float_to_readable(t: float | None) -> str:
-    """Convert a run time in *seconds* to ``M:SS.mmm``."""
-    if t is None or t <= 0:
-        return "??:??.???"
-    m, s = divmod(t, 60)
-    ms   = int(round((s - int(s)) * 1000))
-    return f"{int(m)}:{int(s):02}.{ms:03}"
 
 def pad_row(embed: discord.Embed) -> None:
     """Add an invisible 3rd column so this row owns exactly 3 inline cells."""
@@ -189,7 +182,7 @@ class InfoCommand(commands.Cog):
         embed.add_field(name="File", value=sub.url or "(no URL)", inline=False)
 
         # row 1  – Time │ Uploaded │
-        embed.add_field(name="Time", value=float_to_readable(sub.time), inline=True)
+        embed.add_field(name="Time", value=fmt_time(sub.time), inline=True)
         uploaded = (
             f"<t:{sub.file.uploaded_at}:F>"
             if sub.file and sub.file.uploaded_at else "unknown"
