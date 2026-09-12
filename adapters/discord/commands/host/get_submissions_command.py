@@ -159,7 +159,7 @@ def _file_participants(sub) -> str:
 
     Unlike ``_who_for``, the team's own name is deliberately left out: hosts
     look runs up by competitor, so the team name only makes the filename
-    longer. Each member is sanitised individually so that one odd display
+    longer. Each member is sanitized individually so that one odd display
     name cannot swallow the separator.
 
     Args:
@@ -273,8 +273,7 @@ def _prepare_entries(
     """
     Turn download results into named archive entries.
 
-    Pure function: no network, no Discord. Filenames follow
-    ``Task N - participant - 1m02s678.ext``, the ghost time being omitted
+    Filenames follow ``Task N - participant - 1m02s678.ext``, the ghost time being omitted
     for formats that do not carry one.
 
     Args:
