@@ -25,6 +25,7 @@ from adapters.discord.utils.submission_utils       import refresh_submission_lis
 from adapters.discord.utils.role_utils             import remove_role_from_member
 from application.services.config_service           import ConfigService
 from application.services.task_manager             import TaskManager
+from application.services.speed_task_service       import SpeedTaskService
 
 
 class DeleteSubmissionCommand(commands.Cog):
@@ -104,6 +105,9 @@ class DeleteSubmissionCommand(commands.Cog):
             submission = await ctx.bot.submission_service.remove_submission(user_id=member.id)
         except Exception as exc:
             return await ctx.send(f"Unable to delete submission: {exc}")
+        # 3a) [speed-task-reset] If current task is speed task, cancel user's session to allow for another task request.
+        if task.speed_task():
+            await ctx.bot.speed_task_service.cancel_session(user_id=member.id)
 
         # 4) Refresh the public submission list
         await refresh_submission_list(
