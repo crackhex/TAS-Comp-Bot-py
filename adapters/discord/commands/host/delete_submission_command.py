@@ -106,7 +106,7 @@ class DeleteSubmissionCommand(commands.Cog):
         except Exception as exc:
             return await ctx.send(f"Unable to delete submission: {exc}")
         # 3a) [speed-task-reset] If current task is speed task, cancel user's session to allow for another task request.
-        if task.speed_task():
+        if task.speed_task:
             await ctx.bot.speed_task_service.cancel_session(user_id=member.id)
 
         # 4) Refresh the public submission list
